@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Api\AccountPasswordController;
+use App\Http\Controllers\Api\AccountProfileController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -40,8 +42,15 @@ Route::middleware(['auth', 'role:buyer'])->prefix('buyer')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::match(['patch', 'put'], '/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+Route::middleware(['auth', 'throttle:60,1'])->prefix('api/account')->group(function () {
+    Route::match(['patch', 'put'], '/profile', [AccountProfileController::class, 'update'])
+        ->name('api.account.profile.update');
+    Route::match(['post', 'patch'], '/password', [AccountPasswordController::class, 'update'])
+        ->name('api.account.password.update');
 });
 
 require __DIR__.'/auth.php';
