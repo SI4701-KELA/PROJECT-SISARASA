@@ -40,7 +40,7 @@ class AccountProfileController extends Controller
                 'email' => $user->email,
                 'phone' => $user->phone,
                 'role' => $user->role,
-                'photo' => $user->photo,
+                'photo' => $user->photo ? asset('storage/' . $user->photo) : null,
             ],
         ]);
     }

@@ -7,12 +7,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     *
-     * Kolom `photo` menyimpan path relatif (maks. 255). Hash kata sandi butuh panjang
-     * lebih dari 25 karakter; kolom password tetap VARCHAR(255) agar kompatibel bcrypt.
-     */
     public function up(): void
     {
         if (Schema::hasColumn('users', 'profile_photo') && ! Schema::hasColumn('users', 'photo')) {
@@ -30,9 +24,6 @@ return new class extends Migration
         }
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         if (Schema::hasColumn('users', 'photo') && ! Schema::hasColumn('users', 'profile_photo')) {
