@@ -36,4 +36,14 @@ class BuyerController extends Controller
         // Kirimkan data ke view
         return view('buyer.nearby', compact('sellers', 'hasLocation'));
     }
+
+    /**
+     * Menampilkan daftar semua toko/UMKM.
+     */
+    public function stores()
+    {
+        $sellers = Seller::where('status_verified', 'approved')->withCount('products')->get();
+        
+        return view('buyer.stores', compact('sellers'));
+    }
 }

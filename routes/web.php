@@ -39,6 +39,12 @@ Route::middleware(['auth', 'role:buyer'])->prefix('buyer')->group(function () {
     Route::get('/menu', function () {
         return view('buyer'); // Nanti bisa dikonfigurasi ke view buyer.menu
     })->name('buyer.menu');
+
+    // Fitur PBI-10: GPS Otomatis Pembeli
+    Route::get('/nearby', [BuyerController::class, 'nearby'])->name('buyer.nearby');
+
+    // Fitur PBI-23: Halaman Daftar Katalog Semua Toko
+    Route::get('/stores', [BuyerController::class, 'stores'])->name('buyer.stores');
     
     // Fitur PBI-10: GPS Otomatis Pembeli
     Route::get('/nearby', [BuyerController::class, 'nearby'])->name('buyer.nearby');
