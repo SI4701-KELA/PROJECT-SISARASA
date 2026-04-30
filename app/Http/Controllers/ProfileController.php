@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\UpdatesUserProfile;
 use App\Http\Requests\ProfileUpdateRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -11,6 +12,8 @@ use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
+    use UpdatesUserProfile;
+
     /**
      * Display the user's profile form.
      */
@@ -26,13 +29,21 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $user = $request->user();
+        $validated = collect($request->validated())->except(['photo'])->all();
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        $this->applyProfileFields($user, $validated);
+
+        $previousPhoto = $user->photo;
+        if ($request->hasFile('photo')) {
+            $user->photo = $this->storeProfilePhoto($request->file('photo'));
         }
 
-        $request->user()->save();
+        $user->save();
+
+        if ($request->hasFile('photo')) {
+            $this->deleteStoredProfilePhoto($previousPhoto);
+        }
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
@@ -55,6 +66,6 @@ class ProfileController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return Redirect::to('/');
+        return Redirect::to('/login');
     }
 }
