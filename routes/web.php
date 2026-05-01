@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AccountPasswordController;
 use App\Http\Controllers\Api\AccountProfileController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\BuyerController;
+use App\Http\Controllers\SellerController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -29,9 +30,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
 
 // Seller Routes
 Route::middleware(['auth', 'role:seller'])->prefix('seller')->group(function () {
-    Route::get('/profile', function () {
-        return view('seller'); // Nanti bisa dikonfigurasi ke view seller.profile
-    })->name('seller.profile');
+    Route::get('/profile', [SellerController::class, 'profile'])->name('seller.profile');
+    Route::post('/profile', [SellerController::class, 'updateProfile'])->name('profile.update');
 });
 
 // Buyer Routes
