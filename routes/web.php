@@ -32,6 +32,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
 Route::middleware(['auth', 'role:seller'])->prefix('seller')->group(function () {
     Route::get('/profile', [SellerController::class, 'profile'])->name('seller.profile');
     Route::post('/profile', [SellerController::class, 'updateProfile'])->name('profile.update');
+    Route::get('/products', [SellerController::class, 'products'])->name('seller.products');
+    Route::post('/product', [SellerController::class, 'storeProduct'])->name('seller.product.store');
+    Route::patch('/product/{id}/toggle-discount', [SellerController::class, 'toggleDiscount'])->name('seller.product.toggle-discount');
 });
 
 // Buyer Routes
