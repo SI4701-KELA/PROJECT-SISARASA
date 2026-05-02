@@ -17,6 +17,9 @@ export default {
             colors: {
                 terracotta: '#c04b36',
                 cream: '#FAF9F8',
+                mint: '#C8E6C9',
+                teal: '#009688',
+                tealHover: '#00796b',
             },
         },
     },
