@@ -170,15 +170,20 @@
                     <h4 class="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em] mb-6">Verification Status</h4>
                     @php
                         $status = $seller->verification_status ?? 'pending';
+                        if (!is_string($status) || empty($status)) {
+                            $status = 'pending';
+                        }
                         $statusClasses = [
                             'pending' => 'bg-orange-100 text-orange-600',
                             'approved' => 'bg-green-100 text-green-600',
                             'rejected' => 'bg-red-100 text-red-600',
                             'suspended' => 'bg-gray-100 text-gray-600'
                         ];
+                        $currentClass = $statusClasses[$status] ?? $statusClasses['pending'];
+                        $bgColor = str_replace('text-', 'bg-', $currentClass);
                     @endphp
-                    <div class="inline-flex items-center px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest {{ $statusClasses[$status] }}">
-                        <span class="w-2 h-2 rounded-full mr-3 {{ str_replace('text-', 'bg-', $statusClasses[$status]) }} animate-pulse"></span>
+                    <div class="inline-flex items-center px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest {{ $currentClass }}">
+                        <span class="w-2 h-2 rounded-full mr-3 {{ $bgColor }} animate-pulse"></span>
                         {{ $status }}
                     </div>
 

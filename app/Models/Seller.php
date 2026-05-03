@@ -22,11 +22,13 @@ class Seller extends Model
         'store_photo',
         'open_time',
         'discount_time',
-        'close_time'
+        'close_time',
+        'pending_profile_updates',
     ];
 
     protected $casts = [
         'verified_at' => 'datetime',
+        'pending_profile_updates' => 'array',
     ];
 
     public function user()
@@ -37,5 +39,21 @@ class Seller extends Model
     public function products()
     {
         return $this->hasMany(Product::class);
+    }
+
+    /**
+     * Relasi ke record favorit yang merujuk toko ini.
+     */
+    public function favoriteStores()
+    {
+        return $this->hasMany(\App\Models\FavoriteStore::class);
+    }
+
+    /**
+     * Relasi many-to-many ke User yang memfavoritkan toko ini.
+     */
+    public function favoritedByUsers()
+    {
+        return $this->belongsToMany(User::class, 'favorite_stores', 'seller_id', 'user_id')->withTimestamps();
     }
 }

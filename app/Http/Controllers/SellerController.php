@@ -17,27 +17,61 @@ class SellerController extends Controller
     public function updateProfile(Request $request)
     {
         $request->validate([
-            'store_name' => 'required|string',
-            'address' => 'required|string',
-            'open_time' => 'required',
+            'store_name'    => 'required|string',
+            'address'       => 'required|string',
+            'open_time'     => 'required',
             'discount_time' => 'required',
-            'close_time' => 'required',
-            'latitude' => 'nullable|numeric',
-            'longitude' => 'nullable|numeric',
-            'store_photo' => 'nullable|image',
+            'close_time'    => 'required',
+            'latitude'      => 'nullable|numeric',
+            'longitude'     => 'nullable|numeric',
+            'store_photo'   => 'nullable|image',
         ]);
 
         $seller = Seller::where('user_id', $request->user()->id)->first();
 
-        $data = $request->except(['store_photo']);
-        $data['user_id'] = $request->user()->id;
-
+        // --- Handle foto toko (langsung diterapkan, tidak dimoderasi) ---
+        $photoPart = [];
         if ($request->hasFile('store_photo')) {
             if ($seller && $seller->store_photo) {
                 Storage::disk('public')->delete($seller->store_photo);
             }
             $path = $request->file('store_photo')->store('store_photos', 'public');
-            $data['store_photo'] = $path;
+            $photoPart = ['store_photo' => $path];
+        }
+
+        // --- Seller APPROVED: karantina perubahan data toko ke pending queue ---
+        if ($seller && $seller->verification_status === 'approved') {
+
+            $pendingData = [
+                'store_name'    => $request->store_name,
+                'address'       => $request->address,
+                'latitude'      => $request->latitude,
+                'longitude'     => $request->longitude,
+                'open_time'     => $request->open_time,
+                'discount_time' => $request->discount_time,
+                'close_time'    => $request->close_time,
+                'requested_at'  => now()->toDateTimeString(),
+            ];
+
+            $seller->pending_profile_updates = $pendingData;
+
+            // Foto tetap langsung disimpan
+            if (!empty($photoPart)) {
+                $seller->store_photo = $photoPart['store_photo'];
+            }
+
+            $seller->save();
+
+            return redirect()->route('seller.profile')
+                ->with('success', '⏳ Usulan perubahan nama profil / letak warung sedang diantrekan untuk ditinjau oleh pimpinan Admin.');
+        }
+
+        // --- Seller PENDING / REJECTED: simpan langsung (data belum ter-approve) ---
+        $data = $request->except(['store_photo']);
+        $data['user_id'] = $request->user()->id;
+
+        if (!empty($photoPart)) {
+            $data['store_photo'] = $photoPart['store_photo'];
         }
 
         if ($seller) {

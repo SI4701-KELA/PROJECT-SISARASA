@@ -21,7 +21,6 @@ class AdminController extends Controller
 
     public function stores()
     {
-        // Menampilkan penjual yang statusnya bukan 'approved' agar admin bisa memoderasi yang pending/rejected
         $sellers = Seller::orderBy('created_at', 'desc')->get();
         return view('admin.stores', compact('sellers'));
     }
@@ -47,5 +46,48 @@ class AdminController extends Controller
         $seller->save();
 
         return redirect()->route('admin.stores')->with('success', 'Status penjual berhasil diperbarui.');
+    }
+
+    /**
+     * APPROVE pending profile update: timpa data asli dengan data antrean, lalu kosongkan antrean.
+     */
+    public function approveUpdate($id)
+    {
+        $seller = Seller::findOrFail($id);
+
+        if (!$seller->pending_profile_updates) {
+            return redirect()->route('admin.stores')->with('error', 'Tidak ada perubahan data yang perlu disetujui.');
+        }
+
+        $pending = $seller->pending_profile_updates;
+
+        // Timpa kolom-kolom utama dengan data dari antrean
+        $seller->store_name    = $pending['store_name']    ?? $seller->store_name;
+        $seller->address       = $pending['address']       ?? $seller->address;
+        $seller->latitude      = $pending['latitude']      ?? $seller->latitude;
+        $seller->longitude     = $pending['longitude']     ?? $seller->longitude;
+        $seller->open_time     = $pending['open_time']     ?? $seller->open_time;
+        $seller->discount_time = $pending['discount_time'] ?? $seller->discount_time;
+        $seller->close_time    = $pending['close_time']    ?? $seller->close_time;
+
+        // Bersihkan antrean setelah disetujui
+        $seller->pending_profile_updates = null;
+        $seller->save();
+
+        return redirect()->route('admin.stores')->with('success', '✅ Perubahan profil toko "' . $seller->store_name . '" telah disetujui dan diterapkan.');
+    }
+
+    /**
+     * REJECT pending profile update: data asli tetap utuh, antrean dimusnahkan.
+     */
+    public function rejectUpdate($id)
+    {
+        $seller = Seller::findOrFail($id);
+
+        // Musnahkan antrean, biarkan data asli tetap sedia kala
+        $seller->pending_profile_updates = null;
+        $seller->save();
+
+        return redirect()->route('admin.stores')->with('success', '❌ Usulan perubahan profil toko "' . $seller->store_name . '" telah ditolak.');
     }
 }

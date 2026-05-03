@@ -49,4 +49,20 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    /**
+     * Relasi ke toko-toko yang difavoritkan oleh user ini.
+     */
+    public function favoriteStores()
+    {
+        return $this->hasMany(\App\Models\FavoriteStore::class);
+    }
+
+    /**
+     * Relasi many-to-many ke Seller melalui tabel favorite_stores.
+     */
+    public function favoriteSellers()
+    {
+        return $this->belongsToMany(\App\Models\Seller::class, 'favorite_stores', 'user_id', 'seller_id')->withTimestamps();
+    }
 }

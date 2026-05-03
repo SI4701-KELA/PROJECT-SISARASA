@@ -100,36 +100,125 @@
         @php
           $vs = $seller->verification_status ?? 'pending';
           $badgeClass = ['pending'=>'bg-yellow-100 text-yellow-700','approved'=>'bg-green-100 text-green-700','rejected'=>'bg-red-100 text-red-700','suspended'=>'bg-gray-100 text-gray-600'][$vs] ?? 'bg-yellow-100 text-yellow-700';
+          $hasPending = !empty($seller->pending_profile_updates);
         @endphp
         <div @click="select({{ json_encode(['id'=>$seller->id,'store_name'=>$seller->store_name,'address'=>$seller->address,'latitude'=>$seller->latitude,'longitude'=>$seller->longitude,'open_time'=>$seller->open_time,'close_time'=>$seller->close_time,'store_photo'=>$seller->store_photo,'verification_status'=>$vs]) }})"
-          class="bg-white rounded-2xl p-5 cursor-pointer relative overflow-hidden transition-all duration-200 border-2"
-          :class="selected && selected.id === {{ $seller->id }} ? 'border-gray-200 shadow-lg' : 'border-transparent shadow-sm hover:shadow-md'">
+          class="bg-white rounded-2xl cursor-pointer relative overflow-hidden transition-all duration-200 border-2 {{ $hasPending ? 'border-blue-200' : 'border-transparent' }} shadow-sm hover:shadow-md">
           <div x-show="selected && selected.id === {{ $seller->id }}" class="card-bar"></div>
-          <div class="flex justify-between items-start gap-3 mb-1">
-            <h3 class="font-bold text-gray-900 text-base leading-tight">{{ $seller->store_name ?? 'Untitled Store' }}</h3>
-            <span class="text-[10px] font-bold px-2.5 py-1 rounded-full flex-shrink-0 uppercase tracking-wide {{ $badgeClass }}">{{ $vs }}</span>
-          </div>
-          <p class="text-gray-400 text-xs flex items-center gap-1 mb-4">
-            <svg class="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/></svg>
-            {{ $seller->address ?? 'Location not set' }} • Registered {{ $seller->created_at->diffForHumans() }}
-          </p>
-          <div class="flex items-end justify-between">
-            <div class="flex gap-8">
-              <div>
-                <p class="text-[9px] font-bold text-gray-300 uppercase tracking-widest mb-1">Date Submitted</p>
-                <p class="text-xs font-semibold text-gray-700">{{ $seller->created_at->format('M d, Y') }}</p>
+
+          <div class="p-5">
+            <div class="flex justify-between items-start gap-3 mb-1">
+              <div class="flex items-center gap-2 min-w-0">
+                <h3 class="font-bold text-gray-900 text-base leading-tight truncate">{{ $seller->store_name ?? 'Untitled Store' }}</h3>
+                @if($hasPending)
+                  <span class="flex-shrink-0 inline-flex items-center gap-1 bg-blue-100 text-blue-700 text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wide animate-pulse">
+                    <span class="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>PENDING UPDATE
+                  </span>
+                @endif
               </div>
-              <div>
-                <p class="text-[9px] font-bold text-gray-300 uppercase tracking-widest mb-1">Status</p>
-                <p class="text-xs font-bold {{ ['pending'=>'text-orange-500','approved'=>'text-green-600','rejected'=>'text-red-500','suspended'=>'text-gray-500'][$vs] ?? 'text-orange-500' }}">
-                  {{ ucfirst($vs) }}
-                </p>
+              <span class="text-[10px] font-bold px-2.5 py-1 rounded-full flex-shrink-0 uppercase tracking-wide {{ $badgeClass }}">{{ $vs }}</span>
+            </div>
+            <p class="text-gray-400 text-xs flex items-center gap-1 mb-4">
+              <svg class="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/></svg>
+              {{ $seller->address ?? 'Location not set' }} • Registered {{ $seller->created_at->diffForHumans() }}
+            </p>
+            <div class="flex items-end justify-between">
+              <div class="flex gap-8">
+                <div>
+                  <p class="text-[9px] font-bold text-gray-300 uppercase tracking-widest mb-1">Date Submitted</p>
+                  <p class="text-xs font-semibold text-gray-700">{{ $seller->created_at->format('M d, Y') }}</p>
+                </div>
+                <div>
+                  <p class="text-[9px] font-bold text-gray-300 uppercase tracking-widest mb-1">Status</p>
+                  <p class="text-xs font-bold {{ ['pending'=>'text-orange-500','approved'=>'text-green-600','rejected'=>'text-red-500','suspended'=>'text-gray-500'][$vs] ?? 'text-orange-500' }}">
+                    {{ ucfirst($vs) }}
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-center gap-1 text-gray-400 text-xs font-medium hover:text-red-500">
+                Review Details <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
               </div>
             </div>
-            <div class="flex items-center gap-1 text-gray-400 text-xs font-medium hover:text-red-500">
-              Review Details <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+          </div>
+
+          {{-- ============================================================= --}}
+          {{-- VISUAL DIFF COMPARATOR — hanya muncul bila ada pending update  --}}
+          {{-- ============================================================= --}}
+          @if($hasPending)
+          @php $pending = $seller->pending_profile_updates; @endphp
+          <div class="mx-3 mb-3 rounded-xl overflow-hidden border border-blue-200 bg-blue-50/60">
+
+            {{-- Header Alert --}}
+            <div class="flex items-center justify-between px-4 py-2.5 bg-blue-600">
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                <p class="text-white text-xs font-black tracking-wide">⚠️ ADA PERMINTAAN PERUBAHAN PROFILE</p>
+              </div>
+              @if(isset($pending['requested_at']))
+                <span class="text-blue-200 text-[10px] font-medium">{{ \Carbon\Carbon::parse($pending['requested_at'])->diffForHumans() }}</span>
+              @endif
+            </div>
+
+            {{-- Diff Table --}}
+            <div class="px-4 pt-3 pb-2">
+              <div class="grid grid-cols-2 gap-x-3 mb-2">
+                <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">📌 Data Lama (Aktif)</p>
+                <p class="text-[9px] font-black text-blue-600 uppercase tracking-widest mb-1">✏️ Usulan Baru</p>
+              </div>
+
+              @php
+                $diffFields = [
+                  'store_name'    => 'Nama Toko',
+                  'address'       => 'Alamat',
+                  'open_time'     => 'Jam Buka',
+                  'close_time'    => 'Jam Tutup',
+                  'discount_time' => 'Jam Diskon',
+                  'latitude'      => 'Latitude',
+                  'longitude'     => 'Longitude',
+                ];
+              @endphp
+
+              @foreach($diffFields as $field => $label)
+                @php
+                  $oldVal = $seller->$field ?? '—';
+                  $newVal = $pending[$field] ?? '—';
+                  $changed = $oldVal != $newVal;
+                @endphp
+                @if($changed)
+                <div class="grid grid-cols-2 gap-x-3 py-1.5 border-t border-blue-100 first:border-0">
+                  <div>
+                    <p class="text-[9px] text-gray-400 font-semibold mb-0.5">{{ $label }}</p>
+                    <p class="text-xs font-medium text-gray-600 bg-white/70 rounded px-1.5 py-0.5 line-through decoration-red-300">{{ $oldVal }}</p>
+                  </div>
+                  <div>
+                    <p class="text-[9px] text-blue-500 font-semibold mb-0.5">{{ $label }}</p>
+                    <p class="text-xs font-bold text-blue-800 bg-blue-100 rounded px-1.5 py-0.5">{{ $newVal }}</p>
+                  </div>
+                </div>
+                @endif
+              @endforeach
+            </div>
+
+            {{-- Action Buttons --}}
+            <div class="flex gap-2 px-4 pb-3 pt-1" onclick="event.stopPropagation()">
+              <form method="POST" action="{{ route('admin.sellers.approve-update', $seller->id) }}" class="flex-1">
+                @csrf @method('PATCH')
+                <button type="submit" class="w-full flex items-center justify-center gap-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-2 rounded-lg transition-colors shadow-sm">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                  Setujui Perubahan
+                </button>
+              </form>
+              <form method="POST" action="{{ route('admin.sellers.reject-update', $seller->id) }}" class="flex-1">
+                @csrf @method('PATCH')
+                <button type="submit" class="w-full flex items-center justify-center gap-1.5 bg-white hover:bg-red-50 text-red-500 text-xs font-bold py-2 rounded-lg border border-red-200 transition-colors">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                  Tolak Usulan
+                </button>
+              </form>
             </div>
           </div>
+          @endif
+
         </div>
         @empty
         <div class="bg-white rounded-2xl p-10 text-center text-gray-400 text-sm shadow-sm">Tidak ada data toko.</div>

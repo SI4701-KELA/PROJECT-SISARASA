@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Seller;
+use App\Models\FavoriteStore;
 
 class BuyerController extends Controller
 {
@@ -52,8 +53,13 @@ class BuyerController extends Controller
             $sellers = class_exists(Seller::class) ? Seller::all() : collect([]);
         }
 
+        // Injeksi array favorit buyer untuk tombol hati
+        $userFavorites = auth()->check()
+            ? FavoriteStore::where('user_id', auth()->id())->pluck('seller_id')->toArray()
+            : [];
+
         // Kirimkan data ke view
-        return view('buyer.nearby', compact('sellers', 'hasLocation'));
+        return view('buyer.nearby', compact('sellers', 'hasLocation', 'userFavorites'));
     }
 
     /**
@@ -62,7 +68,12 @@ class BuyerController extends Controller
     public function stores()
     {
         $sellers = Seller::where('verification_status', 'approved')->withCount('products')->get();
+
+        // Injeksi array favorit buyer untuk tombol hati
+        $userFavorites = auth()->check()
+            ? FavoriteStore::where('user_id', auth()->id())->pluck('seller_id')->toArray()
+            : [];
         
-        return view('buyer.stores', compact('sellers'));
+        return view('buyer.stores', compact('sellers', 'userFavorites'));
     }
 }

@@ -40,6 +40,16 @@
             </div>
         </header>
 
+        {{-- Flash Message --}}
+        @if(session('success'))
+            <div class="max-w-7xl mx-auto mt-4 px-4">
+                <div class="px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-medium flex items-center gap-2">
+                    <svg class="w-5 h-5 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    {{ session('success') }}
+                </div>
+            </div>
+        @endif
+
         <!-- Status Ditolak (Error Panel) -->
         <div x-show="locationDenied"
              style="display: none;" 
@@ -79,12 +89,29 @@
                         
                         <!-- Badge Jarak (Haversine) -->
                         @if(isset($seller->distance))
-                            <div class="bg-white text-[#009688] font-bold px-3 py-1 rounded-bl-lg absolute top-0 right-0 shadow-sm border-l border-b border-gray-100">
+                            <div class="bg-white text-[#009688] font-bold px-3 py-1 rounded-bl-lg absolute top-0 right-12 shadow-sm border-l border-b border-gray-100">
                                 {{ number_format($seller->distance, 1) }} KM
                             </div>
                         @endif
 
-                        <h3 class="text-lg font-bold text-gray-800">{{ $seller->name ?? 'Nama Toko Default' }}</h3>
+                        {{-- Tombol Hati Favorit --}}
+                        <form method="POST" action="{{ route('buyer.favorite.toggle') }}" class="absolute top-2 right-2 z-10">
+                            @csrf
+                            <input type="hidden" name="seller_id" value="{{ $seller->id }}">
+                            <button type="submit" class="group/heart w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm hover:scale-110 active:scale-95 {{ in_array($seller->id, $userFavorites ?? []) ? 'bg-red-50 hover:bg-red-100' : 'bg-white/80 backdrop-blur-sm hover:bg-red-50' }}" title="{{ in_array($seller->id, $userFavorites ?? []) ? 'Hapus dari Favorit' : 'Tambahkan ke Favorit' }}">
+                                @if(in_array($seller->id, $userFavorites ?? []))
+                                    <svg class="w-4.5 h-4.5 text-red-500 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z"/>
+                                    </svg>
+                                @else
+                                    <svg class="w-4.5 h-4.5 text-gray-400 group-hover/heart:text-red-400 transition-colors" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/>
+                                    </svg>
+                                @endif
+                            </button>
+                        </form>
+
+                        <h3 class="text-lg font-bold text-gray-800 pr-12">{{ $seller->name ?? 'Nama Toko Default' }}</h3>
                         <p class="text-gray-500 text-sm mt-1">{{ $seller->address ?? 'Alamat Toko Default' }}</p>
                     </div>
                 @empty
