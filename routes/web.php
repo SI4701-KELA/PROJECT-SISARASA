@@ -34,14 +34,14 @@ Route::middleware(['auth', 'role:seller'])->prefix('seller')->group(function () 
     Route::post('/profile', [SellerController::class, 'updateProfile'])->name('profile.update');
     Route::get('/products', [SellerController::class, 'products'])->name('seller.products');
     Route::post('/product', [SellerController::class, 'storeProduct'])->name('seller.product.store');
+    Route::post('/product/{id}', [SellerController::class, 'updateProduct'])->name('product.update');
+    Route::delete('/product/{id}', [SellerController::class, 'destroyProduct'])->name('product.destroy');
     Route::patch('/product/{id}/toggle-discount', [SellerController::class, 'toggleDiscount'])->name('seller.product.toggle-discount');
 });
 
 // Buyer Routes
 Route::middleware(['auth', 'role:buyer'])->prefix('buyer')->group(function () {
-    Route::get('/menu', function () {
-        return view('buyer'); // Nanti bisa dikonfigurasi ke view buyer.menu
-    })->name('buyer.menu');
+    Route::get('/menu', [BuyerController::class, 'menu'])->name('buyer.menu');
 
     // Fitur PBI-10: GPS Otomatis Pembeli
     Route::get('/nearby', [BuyerController::class, 'nearby'])->name('buyer.nearby');

@@ -30,4 +30,9 @@ class Product extends Model
     {
         return $this->hasOne(Discount::class);
     }
+
+    public function discounts()
+    {
+        return $this->hasMany(Discount::class);
+    }
 }

@@ -7,6 +7,25 @@ use App\Models\Seller;
 
 class BuyerController extends Controller
 {
+    public function menu(Request $request)
+    {
+        $categories = \App\Models\Category::all();
+        $categoryId = $request->input('category_id');
+
+        $query = \App\Models\Product::with(['seller', 'category', 'stock', 'discounts'])
+            ->whereHas('seller', function ($q) {
+                $q->where('status_verified', 'approved');
+            });
+
+        if ($categoryId) {
+            $query->where('category_id', $categoryId);
+        }
+
+        $products = $query->get();
+
+        return view('buyer.menu', compact('categories', 'categoryId', 'products'));
+    }
+
     /**
      * Menampilkan halaman toko terdekat (nearby).
      */

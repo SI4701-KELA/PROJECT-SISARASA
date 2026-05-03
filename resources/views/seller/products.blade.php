@@ -95,7 +95,7 @@
         @else
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 @foreach($products as $product)
-                    <div class="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
+                    <div x-data="{ editOpen: false }" class="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
                         <div class="h-48 w-full bg-gray-200 relative">
                             <img src="{{ Storage::url($product->image) }}" alt="{{ $product->name }}" class="w-full h-full object-cover">
                         </div>
@@ -118,6 +118,79 @@
                                 <span class="px-3 py-1 bg-gray-100 text-gray-800 text-sm font-bold rounded-full">
                                     {{ $product->stock->qty_reg ?? 0 }}
                                 </span>
+                            </div>
+
+                            <div class="flex gap-2 mt-4">
+                                <button @click="editOpen = true" type="button" class="flex-1 bg-teal-50 hover:bg-teal-100 text-teal-600 font-bold py-2 px-3 rounded-xl transition-colors text-sm text-center">
+                                    Edit Makanan
+                                </button>
+                                <form action="{{ route('product.destroy', $product->id) }}" method="POST" class="flex-none" onsubmit="return confirm('Apakah Anda yakin ingin menghapus produk ini?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" title="Hapus Makanan" class="bg-red-50 hover:bg-red-100 text-red-600 font-bold py-2 px-3 rounded-xl transition-colors flex items-center justify-center">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                    </button>
+                                </form>
+                            </div>
+
+                            <!-- Edit Modal -->
+                            <div x-show="editOpen" class="fixed inset-0 z-[100] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true" style="display: none;">
+                                <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                                    <div x-show="editOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" @click="editOpen = false"></div>
+                                    <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                                    <div x-show="editOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+                                        <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                                            <div class="flex justify-between items-center mb-5">
+                                                <h3 class="text-xl leading-6 font-bold text-gray-900" id="modal-title">Edit Makanan: {{ $product->name }}</h3>
+                                                <button @click="editOpen = false" type="button" class="text-gray-400 hover:text-gray-500">
+                                                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                                </button>
+                                            </div>
+                                            <form action="{{ route('product.update', $product->id) }}" method="POST" enctype="multipart/form-data">
+                                                @csrf
+                                                @method('PUT')
+                                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Nama Makanan</label>
+                                                        <input type="text" name="name" value="{{ $product->name }}" required class="w-full bg-gray-100 border-transparent focus:border-transparent focus:ring-0 rounded-xl px-3 py-2 text-gray-700 font-medium">
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Kategori</label>
+                                                        <select name="category_id" required class="w-full bg-gray-100 border-transparent focus:border-transparent focus:ring-0 rounded-xl px-3 py-2 text-gray-700 font-medium">
+                                                            @foreach($categories as $category)
+                                                                <option value="{{ $category->id }}" {{ $product->category_id == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+                                                    <div class="md:col-span-2">
+                                                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Deskripsi</label>
+                                                        <textarea name="description" rows="2" class="w-full bg-gray-100 border-transparent focus:border-transparent focus:ring-0 rounded-xl px-3 py-2 text-gray-700 font-medium resize-none">{{ $product->description }}</textarea>
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Harga Normal</label>
+                                                        <input type="number" name="base_price" value="{{ $product->base_price }}" min="0" required class="w-full bg-gray-100 border-transparent focus:border-transparent focus:ring-0 rounded-xl px-3 py-2 text-gray-700 font-medium">
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Harga Promo Sisa Rasa</label>
+                                                        <input type="number" name="discount_price" value="{{ $product->discount ? $product->discount->discount_price : 0 }}" min="0" required class="w-full bg-gray-100 border-transparent focus:border-transparent focus:ring-0 rounded-xl px-3 py-2 text-gray-700 font-medium">
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Porsi Disiapkan</label>
+                                                        <input type="number" name="qty_reg" value="{{ $product->stock ? $product->stock->qty_reg : 0 }}" min="1" required class="w-full bg-gray-100 border-transparent focus:border-transparent focus:ring-0 rounded-xl px-3 py-2 text-gray-700 font-medium">
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Ganti Foto (Opsional)</label>
+                                                        <input type="file" name="image" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-white file:text-teal-600 hover:file:bg-gray-50 cursor-pointer bg-gray-100 rounded-xl p-1">
+                                                    </div>
+                                                </div>
+                                                <div class="mt-6 flex justify-end gap-3">
+                                                    <button type="button" @click="editOpen = false" class="py-2 px-4 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl transition-colors">Batal</button>
+                                                    <button type="submit" class="py-2 px-6 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl shadow-md transition-all duration-200 hover:scale-[1.02]">Simpan Perubahan</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <form action="{{ route('seller.product.toggle-discount', $product->id) }}" method="POST" class="mt-4">

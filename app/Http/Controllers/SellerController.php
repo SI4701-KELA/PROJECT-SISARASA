@@ -112,6 +112,90 @@ class SellerController extends Controller
         }
     }
 
+    public function updateProduct(Request $request, $id)
+    {
+        $seller = Seller::where('user_id', $request->user()->id)->first();
+        if (!$seller) {
+            return redirect()->back()->with('error', 'Akses ditolak.');
+        }
+
+        $product = \App\Models\Product::where('seller_id', $seller->id)->findOrFail($id);
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'category_id' => 'required|exists:categories,id',
+            'base_price' => 'required|numeric|min:0',
+            'discount_price' => 'required|numeric|min:0',
+            'qty_reg' => 'required|integer|min:1',
+            'image' => 'nullable|image|max:2048',
+        ]);
+
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            $data = [
+                'category_id' => $request->category_id,
+                'name' => $request->name,
+                'description' => $request->description,
+                'base_price' => $request->base_price,
+            ];
+
+            if ($request->hasFile('image')) {
+                if ($product->image) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($product->image);
+                }
+                $data['image'] = $request->file('image')->store('products', 'public');
+            }
+
+            $product->update($data);
+
+            if ($product->stock) {
+                $product->stock->update(['qty_reg' => $request->qty_reg]);
+            } else {
+                \App\Models\Stock::create([
+                    'product_id' => $product->id,
+                    'qty_reg' => $request->qty_reg,
+                    'qty_surplus' => 0,
+                ]);
+            }
+
+            $discount = $product->discount()->first();
+            if ($discount) {
+                $discount->update(['discount_price' => $request->discount_price]);
+            } else {
+                \App\Models\Discount::create([
+                    'product_id' => $product->id,
+                    'discount_price' => $request->discount_price,
+                    'is_active' => false,
+                ]);
+            }
+
+            \Illuminate\Support\Facades\DB::commit();
+            return redirect()->back()->with('success', 'Produk berhasil diperbarui.');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            return redirect()->back()->with('error', 'Gagal memperbarui produk: ' . $e->getMessage());
+        }
+    }
+
+    public function destroyProduct(Request $request, $id)
+    {
+        $seller = Seller::where('user_id', $request->user()->id)->first();
+        if (!$seller) {
+            return redirect()->back()->with('error', 'Akses ditolak.');
+        }
+
+        $product = \App\Models\Product::where('seller_id', $seller->id)->findOrFail($id);
+
+        if ($product->image) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($product->image);
+        }
+
+        $product->delete();
+
+        return redirect()->back()->with('success', 'Produk berhasil dihapus.');
+    }
+
     public function toggleDiscount(Request $request, $id)
     {
         $seller = Seller::where('user_id', $request->user()->id)->first();
