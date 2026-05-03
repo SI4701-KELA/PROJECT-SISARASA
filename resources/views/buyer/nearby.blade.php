@@ -1,188 +1,204 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sisa Rasa - Lokasi Terdekat</title>
-    <!-- Asumsi menggunakan Vite untuk kompilasi CSS Tailwind dan JS Alpine -->
-    <!-- Jika Alpine belum ada, pastikan project Laravel sudah menginclude AlpineJS -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-    
-    <!-- Fallback Alpine.js via CDN jika belum terkonfigurasi di resources/js/app.js -->
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-</head>
-<body class="bg-gray-50 text-gray-800 font-sans antialiased">
-    
-    <!-- Container utama dengan state Alpine.js -->
-    <div x-data="geoHandler()" class="min-h-screen relative">
-        
-        <!-- Menu Header -->
-        <header class="bg-white shadow-sm sticky top-0 z-40">
-            <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-                <h1 class="text-xl font-bold text-gray-900">Toko Terdekat</h1>
-                
-                @if(!$hasLocation)
-                    <!-- Tombol jika belum ada lokasi di URL -->
-                    <button @click="getLocation()" 
-                            class="px-4 py-2 text-white font-medium rounded-lg shadow-sm transition-colors duration-200" 
-                            style="background-color: #c04b36;"
-                            onmouseover="this.style.backgroundColor='#a33d2a'" 
-                            onmouseout="this.style.backgroundColor='#c04b36'">
-                        Deteksi Lokasi Saya
-                    </button>
-                @else
-                    <!-- Tombol jika lokasi sudah ada di URL -->
-                    <button @click="getLocation()" 
-                            class="px-4 py-2 bg-white text-[#c04b36] border border-[#c04b36] font-medium rounded-lg shadow-sm hover:bg-[#c04b36] hover:text-white transition-colors duration-200">
-                        Perbarui Titik Lokasi
-                    </button>
-                @endif
-            </div>
-        </header>
+@extends('layouts.buyer')
 
-        <!-- Status Ditolak (Error Panel) -->
-        <div x-show="locationDenied"
-             style="display: none;" 
-             x-transition:enter="transition ease-out duration-300"
-             x-transition:enter-start="opacity-0 transform -translate-y-2"
-             x-transition:enter-end="opacity-100 transform translate-y-0"
-             class="max-w-3xl mx-auto mt-6 px-4">
-            <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg shadow-sm">
-                <div class="flex items-start">
-                    <div class="flex-shrink-0">
-                        <!-- Icon Alert -->
-                        <svg class="h-6 w-6 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                    </div>
-                    <div class="ml-3">
-                        <h3 class="text-sm font-semibold text-red-800">Akses Lokasi Ditolak</h3>
-                        <div class="mt-2 text-sm text-red-700">
-                            <p>Mohon Izinkan Lokasi Anda via pengaturan gembok URL browser. Kami membutuhkan lokasi Anda untuk menampilkan penjual "Sisa Rasa" terdekat.</p>
-                        </div>
-                        <div class="mt-4">
-                            <button @click="getLocation()" class="bg-red-100 text-red-800 hover:bg-red-200 px-3 py-1.5 rounded-md text-sm font-medium transition-colors">
-                                Coba Akses Lagi
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+@section('title', 'Toko Terdekat')
+
+@section('content')
+<div class="max-w-7xl mx-auto" x-data="geoHandler()">
+    {{-- Header --}}
+    <div class="flex items-center gap-4 mb-8">
+        <div class="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center text-terracotta shrink-0">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.243-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
         </div>
-
-        <!-- Main Content (Daftar Toko / Mockup) -->
-        <main class="max-w-7xl mx-auto px-4 py-8">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Data Toko Loop -->
-                @forelse($sellers as $seller)
-                    <div class="bg-gradient-to-br from-white to-[#009688]/10 rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow relative overflow-hidden">
-                        
-                        <!-- Badge Jarak (Haversine) -->
-                        @if(isset($seller->distance))
-                            <div class="bg-white text-[#009688] font-bold px-3 py-1 rounded-bl-lg absolute top-0 right-0 shadow-sm border-l border-b border-gray-100">
-                                {{ number_format($seller->distance, 1) }} KM
-                            </div>
-                        @endif
-
-                        <h3 class="text-lg font-bold text-gray-800">{{ $seller->name ?? 'Nama Toko Default' }}</h3>
-                        <p class="text-gray-500 text-sm mt-1">{{ $seller->address ?? 'Alamat Toko Default' }}</p>
-                    </div>
-                @empty
-                    @if($hasLocation)
-                    <div class="col-span-full text-center py-12 text-gray-500 bg-white rounded-xl shadow-sm border border-gray-100">
-                        <p class="text-lg">Belum ada data toko Sisa Rasa di sekitar Anda.</p>
-                    </div>
-                    @else
-                    <div class="col-span-full text-center py-16 text-gray-500 bg-white rounded-xl shadow-sm border border-gray-100">
-                        <svg class="mx-auto h-12 w-12 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        <p class="text-lg font-medium">Silakan deteksi lokasi terlebih dahulu</p>
-                        <p class="mt-1">Temukan beragam makanan Sisa Rasa yang lezat di dekat Anda.</p>
-                    </div>
-                    @endif
-                @endforelse
-            </div>
-        </main>
-
-        <!-- Animasi Loading (Radar) -->
-        <!-- Overlay besar di tengah layar, hanya muncul saat x-show="isLocating" -->
-        <div x-show="isLocating" 
-             style="display: none;"
-             class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/90 backdrop-blur-sm transition-opacity">
-            
-            <div class="relative flex items-center justify-center mb-8">
-                <!-- Ring membesar (Ping/Pulse) -->
-                <div class="absolute w-32 h-32 rounded-full border-4 border-[#c04b36] opacity-75 animate-ping"></div>
-                <div class="absolute w-24 h-24 rounded-full border-4 border-[#c04b36] opacity-50 animate-ping" style="animation-delay: 0.3s;"></div>
-                <div class="absolute w-16 h-16 rounded-full border-4 border-[#c04b36] opacity-25 animate-ping" style="animation-delay: 0.6s;"></div>
-                <!-- Titik tengah -->
-                <div class="w-8 h-8 bg-[#c04b36] rounded-full z-10 shadow-lg flex items-center justify-center">
-                    <div class="w-3 h-3 bg-white rounded-full"></div>
-                </div>
-            </div>
-            
-            <p class="text-xl font-bold text-gray-800 animate-pulse tracking-wide">Mencari Lokasi Anda...</p>
-            <p class="text-sm text-gray-500 mt-2">Mohon tunggu sebentar atau konfirmasi izin di browser.</p>
+        <div>
+            <h1 class="text-3xl font-black text-gray-900 tracking-tight">Radar Toko Terdekat</h1>
+            <p class="text-sm text-gray-500 font-medium mt-1">Temukan makanan surplus di sekeliling Anda berdasarkan titik lokasi akurat saat ini.</p>
         </div>
-        
     </div>
 
-    <!-- Script Block berisi Objek geoHandler() -->
-    <script>
-        function geoHandler() {
-            return {
-                locationDenied: false,
-                isLocating: false,
+    @if(!$hasLocation)
+        {{-- State: Belum Ada Lokasi (Loading / Meminta Izin) --}}
+        <div class="bg-white rounded-[32px] border border-gray-100 shadow-sm p-16 max-w-3xl mx-auto mt-12 relative overflow-hidden text-center" x-init="getLocation()">
+            <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-terracotta to-orange-400"></div>
+            
+            <div class="relative flex items-center justify-center mb-10">
+                <div class="absolute w-32 h-32 rounded-full border-4 border-red-100 opacity-75 animate-ping"></div>
+                <div class="absolute w-24 h-24 rounded-full border-4 border-red-200 opacity-50 animate-ping" style="animation-delay: 0.3s;"></div>
+                <div class="w-20 h-20 bg-terracotta rounded-full z-10 shadow-lg shadow-red-200 flex items-center justify-center">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.243-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                </div>
+            </div>
 
-                getLocation() {
-                    // Reset state
-                    this.locationDenied = false;
-                    this.isLocating = true;
+            <h3 class="text-2xl font-bold text-gray-900 mb-3" x-show="!locationDenied">Mencari Lokasi Anda...</h3>
+            <p class="text-gray-500 font-medium mb-8" x-show="!locationDenied">Kami sedang mencari toko UMKM dengan makanan surplus terdekat dari titik Anda.</p>
+            
+            <div class="inline-block border border-yellow-200 bg-yellow-50 text-yellow-700 px-6 py-3 rounded-full text-sm font-semibold" x-show="!locationDenied">
+                Harap "Izinkan / Allow" permintaan akses lokasi pada popup browser Anda.
+            </div>
 
-                    // Pastikan browser mendukung geolocation
-                    if ("geolocation" in navigator) {
-                        navigator.geolocation.getCurrentPosition(
-                            // 1. Sukses
-                            (position) => {
-                                const lat = position.coords.latitude;
-                                const lng = position.coords.longitude;
-                                
-                                // Modifikasi URL saat ini dan otomatis lakukan refresh/redirect
-                                const url = new URL(window.location.href);
-                                url.searchParams.set('lat', lat);
-                                url.searchParams.set('lng', lng);
-                                
-                                window.location.href = url.toString();
-                            },
-                            // 2. Gagal / Ditolak
-                            (error) => {
-                                this.isLocating = false;
-                                
-                                // Error code 1 (PERMISSION_DENIED): User menolak akses lokasi
-                                if (error.code === 1) {
-                                    this.locationDenied = true;
-                                } else {
-                                    alert("Terjadi kesalahan saat mendeteksi lokasi: " + error.message);
-                                }
-                            },
-                            // 3. Opsi tambahan
-                            {
-                                enableHighAccuracy: true,
-                                timeout: 10000,
-                                maximumAge: 0
+            <div x-show="locationDenied" style="display: none;">
+                <h3 class="text-2xl font-bold text-red-600 mb-3">Akses Lokasi Ditolak</h3>
+                <p class="text-gray-500 font-medium mb-6">Kami membutuhkan akses lokasi untuk menjalankan Radar. Mohon ubah pengaturan browser Anda.</p>
+                <button @click="getLocation()" class="bg-terracotta hover:bg-[#a6402d] text-white font-bold py-3 px-8 rounded-xl shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-terracotta text-sm">
+                    Coba Deteksi Lagi
+                </button>
+            </div>
+        </div>
+    @else
+        {{-- State: Lokasi Ditemukan & Hasil Pencarian --}}
+        <div class="bg-red-50/50 border border-red-100 rounded-[20px] p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+            <div class="flex items-center gap-4">
+                <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-terracotta shadow-sm shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.243-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                </div>
+                <div>
+                    <h3 class="text-gray-900 font-bold text-sm">Titik Lokasi Anda Ditemukan</h3>
+                    <p class="text-gray-600 font-semibold text-sm mt-0.5">Menampilkan <span class="text-terracotta font-bold">{{ $sellers->count() }} Toko</span> terdekat di sekitar Anda.</p>
+                </div>
+            </div>
+            <button @click="getLocation()" class="flex items-center justify-center gap-2 px-5 py-2.5 bg-white border border-terracotta text-terracotta font-bold rounded-xl text-sm hover:bg-red-50 transition-colors shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                Perbarui Titik Lokasi
+            </button>
+        </div>
+
+        @if($sellers->isEmpty())
+            <div class="text-center py-20 bg-white rounded-[32px] border border-gray-100 shadow-sm">
+                <div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 mb-1">Tidak Ada Toko Terdekat</h3>
+                <p class="text-gray-500 font-medium">Coba perluas pencarian atau perbarui titik lokasi Anda.</p>
+            </div>
+        @else
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                @foreach($sellers as $seller)
+                    <div class="bg-white rounded-[24px] overflow-hidden shadow-sm border border-gray-100 flex flex-col hover:shadow-md transition-all duration-300">
+                        {{-- Green Header --}}
+                        <div class="bg-[#1e9d8b] p-5 relative">
+                            @if(isset($seller->distance))
+                                <div class="absolute top-4 right-4 bg-white text-[#1e9d8b] font-black text-[10px] px-2.5 py-1 rounded-full shadow-sm">
+                                    {{ number_format($seller->distance, 1) }} KM
+                                </div>
+                            @endif
+                            <h2 class="text-white font-bold text-lg mb-1 pr-16 truncate">{{ $seller->store_name ?? 'Toko Default' }}</h2>
+                            <p class="text-white/80 text-sm font-medium mb-3 truncate">{{ $seller->address ?? '-' }}</p>
+                            <div class="flex items-center text-white/90 text-xs font-semibold">
+                                <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                Jam: {{ $seller->open_time ? date('H:i', strtotime($seller->open_time)) : '--:--' }} - {{ $seller->close_time ? date('H:i', strtotime($seller->close_time)) : '--:--' }}
+                            </div>
+                        </div>
+
+                        {{-- Catalog Section --}}
+                        <div class="p-5 flex-1 flex flex-col bg-gray-50/50">
+                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 border-b border-gray-200 pb-2">Katalog UMKM Ini</p>
+                            
+                            <div class="space-y-3 flex-1">
+                                @php
+                                    $previewProducts = $seller->products->take(3);
+                                    $remainingCount = $seller->products->count() - 3;
+                                @endphp
+
+                                @forelse($previewProducts as $product)
+                                    @php
+                                        $hasDiscount = $product->discount && $product->discount->is_active;
+                                    @endphp
+                                    <div class="bg-white rounded-xl p-2.5 border border-gray-100 flex items-center gap-3 shadow-sm">
+                                        <div class="w-12 h-12 rounded-lg bg-gray-100 shrink-0 overflow-hidden">
+                                            @if($product->image)
+                                                <img src="{{ Storage::url($product->image) }}" class="w-full h-full object-cover">
+                                            @else
+                                                <div class="w-full h-full bg-[#1e9d8b]/20"></div>
+                                            @endif
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <h4 class="text-sm font-bold text-gray-900 truncate mb-0.5">{{ $product->name }}</h4>
+                                            @if($hasDiscount)
+                                                <div class="flex items-center gap-2">
+                                                    <span class="text-gray-400 text-xs font-medium line-through">Rp {{ number_format($product->base_price, 0, ',', '.') }}</span>
+                                                    <span class="text-red-500 font-black text-xs">Rp {{ number_format($product->discount->discount_price, 0, ',', '.') }}</span>
+                                                    <span class="bg-red-50 text-red-500 text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded">PROMO SISA RASA</span>
+                                                </div>
+                                            @else
+                                                <p class="text-gray-600 font-bold text-xs">Rp {{ number_format($product->base_price, 0, ',', '.') }}</p>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @empty
+                                    <p class="text-sm text-gray-500 italic text-center py-4">Belum ada produk</p>
+                                @endforelse
+
+                                @if($remainingCount > 0)
+                                    <a href="{{ route('buyer.menu') }}" class="block text-center text-xs font-bold text-[#1e9d8b] hover:text-[#157a6c] mt-4">
+                                        +{{ $remainingCount }} produk lainnya
+                                    </a>
+                                @endif
+                            </div>
+                        </div>
+
+                        {{-- Action Buttons --}}
+                        <div class="p-4 bg-white border-t border-gray-100 flex gap-3 items-center">
+                            <form method="POST" action="{{ route('buyer.favorite.toggle') }}" class="shrink-0">
+                                @csrf
+                                <input type="hidden" name="seller_id" value="{{ $seller->id }}">
+                                <button type="submit" class="w-11 h-11 rounded-xl border {{ in_array($seller->id, $userFavorites ?? []) ? 'bg-red-50 border-red-100' : 'bg-white border-gray-200 hover:bg-gray-50' }} flex items-center justify-center transition-colors">
+                                    @if(in_array($seller->id, $userFavorites ?? []))
+                                        <svg class="w-5 h-5 text-[#ff5252] fill-current" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                                    @else
+                                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+                                    @endif
+                                </button>
+                            </form>
+                            <a href="{{ route('buyer.menu') }}" class="flex-1 text-center py-2.5 bg-white border-2 border-[#1e9d8b] text-[#1e9d8b] font-bold rounded-xl text-sm hover:bg-[#e4f4f2] transition-colors">
+                                Kunjungi Toko
+                            </a>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+    @endif
+</div>
+
+@push('scripts')
+<script>
+    function geoHandler() {
+        return {
+            locationDenied: false,
+            
+            getLocation() {
+                this.locationDenied = false;
+
+                if ("geolocation" in navigator) {
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            const lat = position.coords.latitude;
+                            const lng = position.coords.longitude;
+                            
+                            const url = new URL(window.location.href);
+                            url.searchParams.set('lat', lat);
+                            url.searchParams.set('lng', lng);
+                            
+                            window.location.href = url.toString();
+                        },
+                        (error) => {
+                            if (error.code === 1) {
+                                this.locationDenied = true;
+                            } else {
+                                alert("Terjadi kesalahan saat mendeteksi lokasi: " + error.message);
                             }
-                        );
-                    } else {
-                        // Browser tidak mendukung
-                        this.isLocating = false;
-                        alert("Fitur Geolocation tidak didukung oleh browser Anda.");
-                    }
+                        },
+                        {
+                            enableHighAccuracy: true,
+                            timeout: 10000,
+                            maximumAge: 0
+                        }
+                    );
+                } else {
+                    alert("Fitur Geolocation tidak didukung oleh browser Anda.");
                 }
-            };
-        }
-    </script>
-
-</body>
-</html>
+            }
+        };
+    }
+</script>
+@endpush
+@endsection
