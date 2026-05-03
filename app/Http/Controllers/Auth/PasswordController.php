@@ -3,26 +3,45 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ChangePasswordRequest;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\ValidationException;
 
 class PasswordController extends Controller
 {
     /**
      * Update the user's password.
      */
-    public function update(Request $request): RedirectResponse
+    public function update(ChangePasswordRequest $request): RedirectResponse|JsonResponse
     {
-        $validated = $request->validateWithBag('updatePassword', [
-            'current_password' => ['required', 'current_password'],
-            'password' => ['required', Password::defaults(), 'confirmed'],
-        ]);
+        $user = $request->user();
 
-        $request->user()->update([
-            'password' => Hash::make($validated['password']),
-        ]);
+        if (! Hash::check($request->input('current_password'), $user->getAuthPassword())) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Kata sandi lama salah.',
+                    'errors' => [
+                        'current_password' => ['Kata sandi lama salah.'],
+                    ],
+                ], 401);
+            }
+
+            throw tap(
+                ValidationException::withMessages([
+                    'current_password' => ['Kata sandi lama salah.'],
+                ]),
+                fn (ValidationException $e) => $e->errorBag('updatePassword')
+            );
+        }
+
+        $user->password = $request->validated('password');
+        $user->save();
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Kata sandi berhasil diperbarui.']);
+        }
 
         return back()->with('status', 'password-updated');
     }
