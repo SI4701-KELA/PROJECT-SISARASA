@@ -14,7 +14,7 @@ class BuyerController extends Controller
 
         $query = \App\Models\Product::with(['seller', 'category', 'stock', 'discounts'])
             ->whereHas('seller', function ($q) {
-                $q->where('status_verified', 'approved');
+                $q->where('verification_status', 'approved');
             });
 
         if ($categoryId) {
@@ -41,7 +41,7 @@ class BuyerController extends Controller
             $haversineRaw = '( 6371 * acos( cos( radians(?) ) * cos( radians( latitude ) ) * cos( radians( longitude ) - radians(?) ) + sin( radians(?) ) * sin( radians( latitude ) ) ) ) AS distance';
             
             $sellers = Seller::select('*')
-                ->where('status_verified', 'approved')
+                ->where('verification_status', 'approved')
                 ->whereNotNull('latitude')
                 ->whereNotNull('longitude')
                 ->selectRaw($haversineRaw, [$lat, $lng, $lat])
@@ -61,7 +61,7 @@ class BuyerController extends Controller
      */
     public function stores()
     {
-        $sellers = Seller::where('status_verified', 'approved')->withCount('products')->get();
+        $sellers = Seller::where('verification_status', 'approved')->withCount('products')->get();
         
         return view('buyer.stores', compact('sellers'));
     }
