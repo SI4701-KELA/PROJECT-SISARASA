@@ -122,6 +122,86 @@
                 </button>
             </div>
         </form>
+
+        <!-- Legal Verification Section (NEW) -->
+        <div class="mt-8 bg-white p-8 rounded-[32px] shadow-sm border border-gray-100">
+            <div class="flex items-center mb-6">
+                <svg class="h-6 w-6 text-terracotta mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <h3 class="text-xl font-bold text-gray-900">Legal Verification</h3>
+            </div>
+
+            <div class="flex flex-col md:flex-row gap-10 items-start">
+                <div class="w-full md:w-1/2">
+                    <p class="text-sm text-gray-500 mb-6 leading-relaxed">Untuk mulai berjualan, silakan unggah dokumen identitas usaha Anda (KTP, NIB, atau SIUP). Pastikan foto jelas dan terbaca. Format: PDF, JPG, PNG (Max 5MB).</p>
+                    
+                    <form action="{{ route('seller.upload-documents') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+                        @csrf
+                        <div class="bg-gray-50 border-4 border-dashed border-gray-100 rounded-[30px] p-10 text-center hover:bg-red-50/30 transition-all duration-300 group relative">
+                            <input type="file" name="document" id="document" class="hidden" onchange="this.form.submit()">
+                            <label for="document" class="cursor-pointer">
+                                <div class="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                                    <svg class="w-8 h-8 text-terracotta" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                    </svg>
+                                </div>
+                                <span class="text-sm font-black text-gray-400 group-hover:text-terracotta transition-colors">Klik untuk Unggah Dokumen</span>
+                            </label>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="w-full md:w-1/2 bg-gray-50 rounded-[35px] p-10">
+                    <h4 class="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em] mb-6">Verification Status</h4>
+                    @php
+                        $status = $seller->verification_status ?? 'pending';
+                        if (!is_string($status) || empty($status)) {
+                            $status = 'pending';
+                        }
+                        $statusClasses = [
+                            'pending' => 'bg-orange-100 text-orange-600',
+                            'approved' => 'bg-green-100 text-green-600',
+                            'rejected' => 'bg-red-100 text-red-600',
+                            'suspended' => 'bg-gray-100 text-gray-600'
+                        ];
+                        $currentClass = $statusClasses[$status] ?? $statusClasses['pending'];
+                        $bgColor = str_replace('text-', 'bg-', $currentClass);
+                    @endphp
+                    <div class="inline-flex items-center px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest {{ $currentClass }}">
+                        <span class="w-2 h-2 rounded-full mr-3 {{ $bgColor }} animate-pulse"></span>
+                        {{ $status }}
+                    </div>
+
+                    @if($status === 'rejected' && $seller->rejection_reason)
+                        <div class="mt-8 p-6 bg-red-50 border border-red-100 rounded-[25px]">
+                            <p class="text-[10px] font-black text-red-400 uppercase tracking-widest mb-2">Alasan Penolakan</p>
+                            <p class="text-sm text-red-700 font-bold leading-relaxed">{{ $seller->rejection_reason }}</p>
+                        </div>
+                        <p class="mt-4 text-[11px] text-gray-400 font-medium italic">Silakan unggah ulang dokumen yang valid untuk ditinjau kembali.</p>
+                    @elseif($status === 'approved')
+                        <div class="mt-8 p-6 bg-green-50 border border-green-100 rounded-[25px]">
+                            <p class="text-sm text-green-700 font-bold leading-relaxed">Selamat! Akun Anda telah terverifikasi. Anda sekarang dapat mengelola katalog produk Sisa Rasa.</p>
+                            <p class="mt-2 text-[10px] text-green-600 font-black uppercase tracking-widest">Verified at: {{ $seller->verified_at ? $seller->verified_at->format('d M Y, H:i') : '-' }}</p>
+                        </div>
+                    @else
+                        <div class="mt-8 p-6 bg-white rounded-[25px] border border-gray-100">
+                            <p class="text-sm text-gray-500 font-medium leading-relaxed italic">Dokumen Anda sedang dalam antrean peninjauan oleh tim kurator kami. Mohon tunggu maksimal 1x24 jam.</p>
+                        </div>
+                    @endif
+
+                    @if($seller && $seller->document_path)
+                        <div class="mt-10 pt-6 border-t border-gray-100">
+                            <p class="text-[10px] font-black text-gray-300 uppercase tracking-widest mb-3">Dokumen Terunggah</p>
+                            <div class="flex items-center bg-white p-4 rounded-2xl shadow-sm border border-gray-50">
+                                <svg class="w-6 h-6 text-terracotta mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                <span class="text-xs font-bold text-gray-600 truncate">{{ basename($seller->document_path) }}</span>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
     </div>
 
     {{-- Legal Verification Section (Retained for functionality, styled simply) --}}

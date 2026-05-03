@@ -4,9 +4,29 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Seller;
+use App\Models\FavoriteStore;
 
 class BuyerController extends Controller
 {
+    public function menu(Request $request)
+    {
+        $categories = \App\Models\Category::all();
+        $categoryId = $request->input('category_id');
+
+        $query = \App\Models\Product::with(['seller', 'category', 'stock', 'discounts'])
+            ->whereHas('seller', function ($q) {
+                $q->where('verification_status', 'approved');
+            });
+
+        if ($categoryId) {
+            $query->where('category_id', $categoryId);
+        }
+
+        $products = $query->get();
+
+        return view('buyer.menu', compact('categories', 'categoryId', 'products'));
+    }
+
     /**
      * Menampilkan halaman toko terdekat (nearby).
      */
@@ -22,7 +42,7 @@ class BuyerController extends Controller
             $haversineRaw = '( 6371 * acos( cos( radians(?) ) * cos( radians( latitude ) ) * cos( radians( longitude ) - radians(?) ) + sin( radians(?) ) * sin( radians( latitude ) ) ) ) AS distance';
             
             $sellers = Seller::select('*')
-                ->where('status_verified', 'approved')
+                ->where('verification_status', 'approved')
                 ->whereNotNull('latitude')
                 ->whereNotNull('longitude')
                 ->selectRaw($haversineRaw, [$lat, $lng, $lat])
@@ -33,8 +53,13 @@ class BuyerController extends Controller
             $sellers = class_exists(Seller::class) ? Seller::all() : collect([]);
         }
 
+        // Injeksi array favorit buyer untuk tombol hati
+        $userFavorites = auth()->check()
+            ? FavoriteStore::where('user_id', auth()->id())->pluck('seller_id')->toArray()
+            : [];
+
         // Kirimkan data ke view
-        return view('buyer.nearby', compact('sellers', 'hasLocation'));
+        return view('buyer.nearby', compact('sellers', 'hasLocation', 'userFavorites'));
     }
 
     /**
@@ -42,8 +67,13 @@ class BuyerController extends Controller
      */
     public function stores()
     {
-        $sellers = Seller::where('status_verified', 'approved')->withCount('products')->get();
+        $sellers = Seller::where('verification_status', 'approved')->withCount('products')->get();
+
+        // Injeksi array favorit buyer untuk tombol hati
+        $userFavorites = auth()->check()
+            ? FavoriteStore::where('user_id', auth()->id())->pluck('seller_id')->toArray()
+            : [];
         
-        return view('buyer.stores', compact('sellers'));
+        return view('buyer.stores', compact('sellers', 'userFavorites'));
     }
 }
