@@ -10,7 +10,7 @@ use App\Http\Controllers\FavoriteController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('login');
 });
 
 Route::get('/dashboard', function () {
@@ -26,9 +26,10 @@ Route::get('/dashboard', function () {
 // Admin Routes
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/dashboard', function () {
-        return redirect()->route('admin.stores');
+        return redirect()->route('admin.validations');
     })->name('admin.dashboard');
     Route::get('/stores', [AdminController::class, 'stores'])->name('admin.stores');
+    Route::get('/validations', [AdminController::class, 'validations'])->name('admin.validations');
     Route::get('/sellers/{id}/document', [AdminController::class, 'viewDocument'])->name('admin.sellers.document');
     Route::patch('/sellers/{id}/verify', [AdminController::class, 'verifySeller'])->name('admin.sellers.verify');
     // PBI-24: Moderasi Pending Profile Updates
