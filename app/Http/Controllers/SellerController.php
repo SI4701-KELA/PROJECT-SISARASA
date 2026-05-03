@@ -49,6 +49,36 @@ class SellerController extends Controller
         return redirect()->route('seller.profile')->with('success', 'Profil toko berhasil diperbarui.');
     }
 
+    public function uploadDocuments(Request $request)
+    {
+        $request->validate([
+            'document' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        ]);
+
+        $seller = Seller::where('user_id', $request->user()->id)->first();
+        if (!$seller) {
+            $seller = Seller::create([
+                'user_id' => $request->user()->id,
+                'verification_status' => 'pending'
+            ]);
+        }
+
+        if ($request->hasFile('document')) {
+            if ($seller->document_path) {
+                Storage::delete($seller->document_path);
+            }
+            $path = $request->file('document')->store('documents');
+            $seller->update([
+                'document_path' => $path,
+                'verification_status' => 'pending',
+                'verified_at' => null,
+                'rejection_reason' => null
+            ]);
+        }
+
+        return redirect()->route('seller.profile')->with('success', 'Dokumen berhasil diunggah. Akun Anda sedang menunggu verifikasi Admin.');
+    }
+
     public function products(Request $request)
     {
         $seller = Seller::where('user_id', $request->user()->id)->first();
