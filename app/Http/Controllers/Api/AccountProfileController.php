@@ -11,9 +11,7 @@ class AccountProfileController extends Controller
 {
     use UpdatesUserProfile;
 
-    /**
-     * PATCH/PUT — pembaruan profil; user id dari sesi autentikasi.
-     */
+
     public function update(ProfileUpdateRequest $request): JsonResponse
     {
         $user = $request->user();
