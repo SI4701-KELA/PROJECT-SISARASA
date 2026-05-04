@@ -20,7 +20,6 @@
             </div>
         @endif
 
-<<<<<<< Updated upstream
         <!-- Cek Kosong -->
         @if($sellers->count() == 0)
             <div class="bg-gradient-to-b from-orange-50 to-white border border-orange-100 rounded-3xl p-16 text-center shadow-sm">
@@ -28,31 +27,6 @@
                     <svg class="w-12 h-12 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
                     </svg>
-=======
-                    {{-- Middle Section: Location & Badges --}}
-                    <div class="mb-6">
-                        <p class="text-sm text-gray-600 font-semibold mb-3">Lokasi: <span class="font-medium text-gray-500">{{ $seller->address ?? '-' }}</span></p>
-                        
-                        <div class="flex items-center gap-3">
-                            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 border border-gray-100 rounded-xl text-xs font-semibold text-gray-600">
-                                <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                {{ $seller->open_time ? date('H:i', strtotime($seller->open_time)) : '--:--' }} - {{ $seller->close_time ? date('H:i', strtotime($seller->close_time)) : '--:--' }}
-                            </span>
-                            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border border-red-100 rounded-xl text-xs font-bold text-terracotta">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                                {{ $seller->products_count }} Menu
-                            </span>
-                        </div>
-                    </div>
-
-                    {{-- Bottom Action --}}
-                    <div class="mt-auto pt-2">
-                        <a href="{{ route('buyer.store.show', $seller->id) }}" class="flex items-center justify-center gap-2 w-full py-2.5 bg-white border border-terracotta text-terracotta font-bold rounded-xl text-sm hover:bg-red-50 transition-colors">
-                            Lihat Katalog Menu
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
-                        </a>
-                    </div>
->>>>>>> Stashed changes
                 </div>
                 <h3 class="text-2xl font-bold text-gray-900 mb-3">Belum ada UMKM Sisa Rasa yang terdaftar.</h3>
                 <p class="text-gray-500 max-w-md mx-auto text-lg">Saat ini belum ada mitra UMKM yang berstatus aktif. Silakan kembali lagi nanti untuk melihat katalog menarik kami.</p>
@@ -126,7 +100,7 @@
                         
                         <!-- Action Button -->
                         <div class="p-4 bg-gray-50 border-t border-gray-100">
-                            <a href="{{ route('buyer.menu') }}" class="flex items-center justify-center gap-2 w-full py-2.5 px-4 bg-white hover:bg-orange-50 text-orange-600 font-semibold rounded-xl border-2 border-orange-100 hover:border-orange-500 transition-all duration-300">
+                            <a href="{{ route('buyer.store.show', $seller->id) }}" class="flex items-center justify-center gap-2 w-full py-2.5 px-4 bg-white hover:bg-orange-50 text-orange-600 font-semibold rounded-xl border-2 border-orange-100 hover:border-orange-500 transition-all duration-300">
                                 Lihat Katalog Menu
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
