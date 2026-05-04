@@ -62,6 +62,9 @@ Route::middleware(['auth', 'role:buyer'])->prefix('buyer')->group(function () {
     // Fitur PBI-23: Halaman Daftar Katalog Semua Toko
     Route::get('/stores', [BuyerController::class, 'stores'])->name('buyer.stores');
 
+    // Halaman detail toko (profil + produk)
+    Route::get('/store/{id}', [BuyerController::class, 'storeDetail'])->name('buyer.store.show');
+
     // Fitur PBI-3: Manajemen Favorit & Toko Tersimpan
     Route::post('/favorite/toggle', [FavoriteController::class, 'toggle'])->name('buyer.favorite.toggle');
     Route::get('/favorites', [FavoriteController::class, 'index'])->name('buyer.favorites.index');
