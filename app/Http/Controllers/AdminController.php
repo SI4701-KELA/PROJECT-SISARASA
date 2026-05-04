@@ -19,6 +19,12 @@ class AdminController extends Controller
         return Storage::download($seller->document_path);
     }
 
+    public function validations()
+    {
+        $sellers = Seller::orderBy('created_at', 'desc')->get();
+        return view('admin.validations', compact('sellers'));
+    }
+
     public function stores()
     {
         $sellers = Seller::orderBy('created_at', 'desc')->get();
