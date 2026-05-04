@@ -151,7 +151,7 @@
                     </form>
 
                     {{-- Visit Store Button --}}
-                    <a href="{{ route('buyer.menu') }}"
+                    <a href="{{ route('buyer.store.show', $seller->id) }}"
                        class="flex-1 text-center py-2.5 border-2 border-[#2aab7f] text-[#2aab7f] font-bold text-sm rounded-xl hover:bg-[#2aab7f] hover:text-white transition-all duration-200">
                         Kunjungi Toko
                     </a>

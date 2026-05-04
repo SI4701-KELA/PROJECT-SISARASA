@@ -76,4 +76,16 @@ class BuyerController extends Controller
         
         return view('buyer.stores', compact('sellers', 'userFavorites'));
     }
+
+    /**
+     * Menampilkan halaman detail toko: profil toko + semua produknya.
+     */
+    public function storeDetail($id)
+    {
+        $seller = Seller::where('verification_status', 'approved')
+            ->with(['products.discounts'])
+            ->findOrFail($id);
+
+        return view('buyer.store-show', compact('seller'));
+    }
 }
