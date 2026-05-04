@@ -50,7 +50,7 @@ class FavoriteController extends Controller
         // Tarik semua seller yang difavoritkan oleh user ini
         $favoriteRecords = FavoriteStore::where('user_id', $userId)
             ->with(['seller' => function ($query) {
-                $query->with(['products.stock', 'products.category', 'user']);
+                $query->with(['products.stock', 'products.category', 'products.discount', 'user']);
             }])
             ->latest() // Sort by yang terbaru difavoritkan
             ->get();
