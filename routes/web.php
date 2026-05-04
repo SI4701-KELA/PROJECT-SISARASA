@@ -40,7 +40,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
 // Seller Routes
 Route::middleware(['auth', 'role:seller'])->prefix('seller')->group(function () {
     Route::get('/profile', [SellerController::class, 'profile'])->name('seller.profile');
-    Route::post('/profile', [SellerController::class, 'updateProfile'])->name('profile.update');
+    Route::post('/profile', [SellerController::class, 'updateProfile'])->name('seller.profile.update');
     Route::post('/documents', [SellerController::class, 'uploadDocuments'])->name('seller.upload-documents');
 
     // Katalog management restricted to verified sellers

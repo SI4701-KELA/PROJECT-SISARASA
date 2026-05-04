@@ -29,7 +29,7 @@
             <p class="text-sm text-gray-500 font-medium">Perbarui nama toko, lokasi, dan jam operasional diskon otomatis.</p>
         </div>
 
-        <form action="{{ route('profile.update') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
+        <form action="{{ route('seller.profile.update') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
             @csrf
 
             {{-- Foto Profil Toko --}}
