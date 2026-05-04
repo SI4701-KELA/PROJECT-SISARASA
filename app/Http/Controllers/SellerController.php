@@ -16,6 +16,13 @@ class SellerController extends Controller
 
     public function updateProfile(Request $request)
     {
+        if ($request->has('latitude')) {
+            $request->merge(['latitude' => str_replace(',', '.', $request->latitude)]);
+        }
+        if ($request->has('longitude')) {
+            $request->merge(['longitude' => str_replace(',', '.', $request->longitude)]);
+        }
+
         $request->validate([
             'store_name'    => 'required|string',
             'address'       => 'required|string',
