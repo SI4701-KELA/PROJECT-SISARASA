@@ -47,7 +47,7 @@ Route::middleware(['auth', 'role:seller'])->prefix('seller')->group(function () 
     Route::middleware('verified_seller')->group(function () {
         Route::get('/products', [SellerController::class, 'products'])->name('seller.products');
         Route::post('/product', [SellerController::class, 'storeProduct'])->name('seller.product.store');
-        Route::post('/product/{id}', [SellerController::class, 'updateProduct'])->name('product.update');
+        Route::put('/product/{id}', [SellerController::class, 'updateProduct'])->name('product.update');
         Route::delete('/product/{id}', [SellerController::class, 'destroyProduct'])->name('product.destroy');
         Route::patch('/product/{id}/toggle-discount', [SellerController::class, 'toggleDiscount'])->name('seller.product.toggle-discount');
     });
