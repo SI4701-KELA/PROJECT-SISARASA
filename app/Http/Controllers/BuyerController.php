@@ -15,7 +15,10 @@ class BuyerController extends Controller
 
         $query = \App\Models\Product::with(['seller', 'category', 'stock', 'discounts'])
             ->whereHas('seller', function ($q) {
-                $q->where('verification_status', 'approved');
+                $q->where('verification_status', 'approved')
+                  ->whereHas('user', function ($uq) {
+                      $uq->where('is_banned', false);
+                  });
             });
 
         if ($categoryId) {
@@ -43,6 +46,9 @@ class BuyerController extends Controller
             
             $sellers = Seller::select('*')
                 ->where('verification_status', 'approved')
+                ->whereHas('user', function ($q) {
+                    $q->where('is_banned', false);
+                })
                 ->whereNotNull('latitude')
                 ->whereNotNull('longitude')
                 ->selectRaw($haversineRaw, [$lat, $lng, $lat])
@@ -50,7 +56,7 @@ class BuyerController extends Controller
                 ->get();
         } else {
             // Jika lokasi belum dideteksi atau model belum siap
-            $sellers = class_exists(Seller::class) ? Seller::all() : collect([]);
+            $sellers = class_exists(Seller::class) ? Seller::whereHas('user', function($q) { $q->where('is_banned', false); })->get() : collect([]);
         }
 
         // Injeksi array favorit buyer untuk tombol hati
@@ -67,11 +73,11 @@ class BuyerController extends Controller
      */
     public function stores()
     {
-        $sellers = Seller::whereHas('user', function ($q) {
+        $sellers = Seller::where('verification_status', 'approved')
+            ->whereHas('user', function ($q) {
                 $q->where('is_banned', false);
             })
-            ->withCount('products')
-            ->get();
+            ->withCount('products')->get();
 
         // Injeksi array favorit buyer untuk tombol hati
         $userFavorites = auth()->check()
@@ -87,6 +93,9 @@ class BuyerController extends Controller
     public function storeDetail($id)
     {
         $seller = Seller::where('verification_status', 'approved')
+            ->whereHas('user', function ($q) {
+                $q->where('is_banned', false);
+            })
             ->with(['products.discounts'])
             ->findOrFail($id);
 

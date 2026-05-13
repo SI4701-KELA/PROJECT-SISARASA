@@ -25,7 +25,7 @@ Route::get('/dashboard', function () {
         return redirect()->route('seller.profile');
     }
     return redirect()->route('admin.dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+})->middleware(['auth', 'verified', 'check.banned'])->name('dashboard');
 
 // Admin Routes
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
@@ -50,7 +50,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
 });
 
 // Seller Routes
-Route::middleware(['auth', 'role:seller'])->prefix('seller')->group(function () {
+Route::middleware(['auth', 'check.banned', 'role:seller'])->prefix('seller')->group(function () {
     Route::get('/profile', [SellerController::class, 'profile'])->name('seller.profile');
     Route::post('/profile', [SellerController::class, 'updateProfile'])->name('seller.profile.update');
     Route::post('/documents', [SellerController::class, 'uploadDocuments'])->name('seller.upload-documents');
@@ -61,14 +61,14 @@ Route::middleware(['auth', 'role:seller'])->prefix('seller')->group(function () 
     Route::middleware('verified_seller')->group(function () {
         Route::get('/products', [SellerController::class, 'products'])->name('seller.products');
         Route::post('/product', [SellerController::class, 'storeProduct'])->name('seller.product.store');
-        Route::post('/product/{id}', [SellerController::class, 'updateProduct'])->name('product.update');
+        Route::put('/product/{id}', [SellerController::class, 'updateProduct'])->name('product.update');
         Route::delete('/product/{id}', [SellerController::class, 'destroyProduct'])->name('product.destroy');
         Route::patch('/product/{id}/toggle-discount', [SellerController::class, 'toggleDiscount'])->name('seller.product.toggle-discount');
     });
 });
 
 // Buyer Routes
-Route::middleware(['auth', 'role:buyer'])->prefix('buyer')->group(function () {
+Route::middleware(['auth', 'check.banned', 'role:buyer'])->prefix('buyer')->group(function () {
     Route::get('/menu', [BuyerController::class, 'menu'])->name('buyer.menu');
 
     // Fitur PBI-10: GPS Otomatis Pembeli
