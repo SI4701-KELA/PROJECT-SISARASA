@@ -15,11 +15,30 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        // 1. Akun Admin
+        User::firstOrCreate(
+            ['email' => 'admin@example.com'],
+            [
+                'name' => 'Administrator',
+                'password' => bcrypt('password'),
+                'role' => 'admin',
+                'email_verified_at' => now(),
+            ]
+        );
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        // 2. Kategori Default
+        $categories = [
+            'Makanan Berat',
+            'Cemilan & Pastry',
+            'Minuman',
+            'Sayuran & Buah'
+        ];
+
+        foreach ($categories as $category) {
+            \App\Models\Category::firstOrCreate(['name' => $category]);
+        }
+
+        // 3. Dummy Sellers
+        $this->call(DummySellerSeeder::class);
     }
 }

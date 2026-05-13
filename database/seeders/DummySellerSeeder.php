@@ -59,7 +59,7 @@ class DummySellerSeeder extends Seeder
                     'open_time'           => '08:00:00',
                     'close_time'          => '20:00:00',
                     'discount_time'       => '18:00:00',
-                    'verification_status' => 'pending',
+                    'verification_status' => 'approved',
                 ]
             );
 
