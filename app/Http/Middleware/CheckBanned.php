@@ -11,7 +11,7 @@ class CheckBanned
     /**
      * Handle an incoming request.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  Closure(Request): (Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
     {
@@ -20,7 +20,9 @@ class CheckBanned
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
-            return redirect()->route('login')->with('error', 'Akun Anda telah dibekukan/di-banned karena pelanggaran.');
+            return redirect()->route('login')->withErrors([
+                'email' => 'Maaf, akun Anda telah dinonaktifkan secara permanen karena pelanggaran.'
+            ]);
         }
 
         return $next($request);

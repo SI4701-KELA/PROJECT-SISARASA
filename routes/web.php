@@ -76,6 +76,7 @@ Route::middleware(['auth', 'check.banned', 'role:buyer'])->prefix('buyer')->grou
 
     // Fitur PBI-23: Halaman Daftar Katalog Semua Toko
     Route::get('/stores', [BuyerController::class, 'stores'])->name('buyer.stores');
+    Route::get('/store/{id}', [BuyerController::class, 'storeDetail'])->name('buyer.store-show');
 
     // Halaman detail toko (profil + produk)
     Route::get('/store/{id}', [BuyerController::class, 'storeDetail'])->name('buyer.store.show');
@@ -83,8 +84,10 @@ Route::middleware(['auth', 'check.banned', 'role:buyer'])->prefix('buyer')->grou
     // Fitur PBI-3: Manajemen Favorit & Toko Tersimpan
     Route::post('/favorite/toggle', [FavoriteController::class, 'toggle'])->name('buyer.favorite.toggle');
     Route::get('/favorites', [FavoriteController::class, 'index'])->name('buyer.favorites.index');
+
     // Fitur PBI-28: Pelaporan Toko
     Route::post('/reports', [ReportController::class, 'store'])->name('buyer.reports.store');
+    
     // PBI-20: Ticketing Komplain (Buyer)
     Route::get('/stores/{seller}/complaint', [ComplaintController::class, 'create'])->name('buyer.complaint.create');
     Route::post('/stores/{seller}/complaint', [ComplaintController::class, 'store'])->name('buyer.complaint.store');
