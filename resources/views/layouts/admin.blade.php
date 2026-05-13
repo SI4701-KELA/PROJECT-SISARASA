@@ -48,6 +48,20 @@
     <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 font-medium text-sm hover:text-gray-600 hover:bg-gray-50">
       <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>Settings
     </a>
+    {{-- Pusat Bantuan --}}
+    @php
+      $openComplaintsCount = \App\Models\Complaint::where('status_tiket', 'Open')->count();
+    @endphp
+    <a href="{{ route('admin.complaints.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm relative {{ request()->routeIs('admin.complaints.*') ? 'tr font-semibold bg-red-50/40' : 'text-gray-400 font-medium hover:text-gray-600 hover:bg-gray-50' }}">
+      <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+      Pusat Bantuan
+      @if($openComplaintsCount > 0)
+        <span class="ml-auto bg-red-500 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full">{{ $openComplaintsCount }}</span>
+      @endif
+      @if(request()->routeIs('admin.complaints.*'))
+        <div class="sidebar-bar"></div>
+      @endif
+    </a>
   </nav>
 
   <div class="px-3 pb-8 space-y-0.5">

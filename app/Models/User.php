@@ -65,4 +65,20 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(\App\Models\Seller::class, 'favorite_stores', 'user_id', 'seller_id')->withTimestamps();
     }
+
+    /**
+     * Relasi ke komplain yang pernah diajukan buyer ini.
+     */
+    public function complaints()
+    {
+        return $this->hasMany(\App\Models\Complaint::class, 'buyer_id');
+    }
+
+    /**
+     * Relasi ke profil Seller jika user ini adalah seller.
+     */
+    public function seller()
+    {
+        return $this->hasOne(\App\Models\Seller::class);
+    }
 }

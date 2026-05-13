@@ -67,7 +67,15 @@ class BuyerController extends Controller
      */
     public function stores()
     {
+<<<<<<< Updated upstream
         $sellers = Seller::where('verification_status', 'approved')->withCount('products')->get();
+=======
+        $sellers = Seller::whereHas('user', function ($q) {
+                $q->where('is_banned', false);
+            })
+            ->withCount('products')
+            ->get();
+>>>>>>> Stashed changes
 
         // Injeksi array favorit buyer untuk tombol hati
         $userFavorites = auth()->check()

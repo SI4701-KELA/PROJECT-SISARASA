@@ -56,4 +56,12 @@ class Seller extends Model
     {
         return $this->belongsToMany(User::class, 'favorite_stores', 'seller_id', 'user_id')->withTimestamps();
     }
+
+    /**
+     * Relasi ke komplain yang diajukan buyer terhadap toko ini.
+     */
+    public function complaints()
+    {
+        return $this->hasMany(Complaint::class);
+    }
 }

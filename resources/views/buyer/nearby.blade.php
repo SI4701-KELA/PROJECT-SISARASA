@@ -148,7 +148,7 @@
                                     @endif
                                 </button>
                             </form>
-                            <a href="{{ route('buyer.menu') }}" class="flex-1 text-center py-2.5 bg-white border-2 border-[#1e9d8b] text-[#1e9d8b] font-bold rounded-xl text-sm hover:bg-[#e4f4f2] transition-colors">
+                            <a href="{{ route('buyer.store.show', $seller->id) }}" class="flex-1 text-center py-2.5 bg-white border-2 border-[#1e9d8b] text-[#1e9d8b] font-bold rounded-xl text-sm hover:bg-[#e4f4f2] transition-colors">
                                 Kunjungi Toko
                             </a>
                         </div>
