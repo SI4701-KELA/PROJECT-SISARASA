@@ -116,8 +116,6 @@
             @endif
 
         </div>
-<<<<<<< Updated upstream
-=======
         {{-- PBI 28 + PBI 20: Tombol Aksi --}}
         <div class="px-6 pb-6 pt-2">
             <div class="pt-4 border-t border-gray-100 flex justify-end gap-2">
@@ -149,7 +147,6 @@
                 </button>
             </div>
         </div>
->>>>>>> Stashed changes
     </div>
 
 

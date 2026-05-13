@@ -7,13 +7,10 @@ use App\Http\Controllers\BuyerController;
 use App\Http\Controllers\SellerController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\FavoriteController;
-<<<<<<< Updated upstream
-=======
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ComplaintController;
 use App\Http\Controllers\AdminComplaintController;
 use App\Http\Controllers\SellerComplaintController;
->>>>>>> Stashed changes
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -42,8 +39,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     // PBI-24: Moderasi Pending Profile Updates
     Route::patch('/sellers/{id}/approve-update', [AdminController::class, 'approveUpdate'])->name('admin.sellers.approve-update');
     Route::patch('/sellers/{id}/reject-update', [AdminController::class, 'rejectUpdate'])->name('admin.sellers.reject-update');
-<<<<<<< Updated upstream
-=======
     // PBI-28: Admin Reports
     Route::get('/reports', [AdminController::class, 'reports'])->name('admin.reports');
     // PBI-29: Admin Report Actions
@@ -52,7 +47,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     // PBI-20: Ticketing Komplain (Admin)
     Route::get('/complaints', [AdminComplaintController::class, 'index'])->name('admin.complaints.index');
     Route::patch('/complaints/{id}', [AdminComplaintController::class, 'update'])->name('admin.complaints.update');
->>>>>>> Stashed changes
 });
 
 // Seller Routes
@@ -89,16 +83,12 @@ Route::middleware(['auth', 'role:buyer'])->prefix('buyer')->group(function () {
     // Fitur PBI-3: Manajemen Favorit & Toko Tersimpan
     Route::post('/favorite/toggle', [FavoriteController::class, 'toggle'])->name('buyer.favorite.toggle');
     Route::get('/favorites', [FavoriteController::class, 'index'])->name('buyer.favorites.index');
-<<<<<<< Updated upstream
-=======
-
     // Fitur PBI-28: Pelaporan Toko
     Route::post('/reports', [ReportController::class, 'store'])->name('buyer.reports.store');
     // PBI-20: Ticketing Komplain (Buyer)
     Route::get('/stores/{seller}/complaint', [ComplaintController::class, 'create'])->name('buyer.complaint.create');
     Route::post('/stores/{seller}/complaint', [ComplaintController::class, 'store'])->name('buyer.complaint.store');
     Route::get('/complaints', [ComplaintController::class, 'index'])->name('buyer.complaints.index');
->>>>>>> Stashed changes
 });
 
 Route::middleware('auth')->group(function () {
