@@ -68,7 +68,7 @@
                             </div>
                         </div>
                     </div>
-<<<<<<< Updated upstream
+                        @endif
 
                     {{-- Middle Section: Location & Badges --}}
                     <div class="mb-6">
@@ -88,7 +88,7 @@
 
                     {{-- Bottom Action --}}
                     <div class="mt-auto pt-2">
-                        <a href="{{ route('buyer.menu') }}" class="flex items-center justify-center gap-2 w-full py-2.5 bg-white border border-terracotta text-terracotta font-bold rounded-xl text-sm hover:bg-red-50 transition-colors">
+                        <a href="{{ route('buyer.store-show', $seller->id) }}" class="flex items-center justify-center gap-2 w-full py-2.5 bg-white border border-terracotta text-terracotta font-bold rounded-xl text-sm hover:bg-red-50 transition-colors">
                             Lihat Katalog Menu
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                         </a>
