@@ -3,7 +3,30 @@
 @section('title', $seller->store_name ?? 'Detail Toko')
 
 @section('content')
-<div class="max-w-3xl mx-auto">
+<div class="max-w-3xl mx-auto" x-data="{ reportModalOpen: false }">
+
+    {{-- Alert Messages --}}
+    @if(session('success'))
+        <div class="mb-6 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-medium flex items-center gap-2 shadow-sm">
+            <svg class="w-5 h-5 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            {{ session('success') }}
+        </div>
+    @endif
+    @if(session('error'))
+        <div class="mb-6 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-medium flex items-center gap-2 shadow-sm">
+            <svg class="w-5 h-5 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            {{ session('error') }}
+        </div>
+    @endif
+    @if ($errors->any())
+        <div class="mb-6 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-medium shadow-sm">
+            <ul class="list-disc pl-5">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 
     {{-- Back Button --}}
     <a href="{{ url()->previous() }}"
@@ -116,6 +139,17 @@
             @endif
 
         </div>
+        {{-- PBI 28: Laporkan Toko Button --}}
+        <div class="px-6 pb-6 pt-2">
+            <div class="pt-4 border-t border-gray-100 flex justify-end">
+                <button @click="reportModalOpen = true" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors border border-red-100 shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"/>
+                    </svg>
+                    Laporkan Toko Ini
+                </button>
+            </div>
+        </div>
     </div>
 
     {{-- Products Section --}}
@@ -204,5 +238,65 @@
         @endif
     </div>
 
+    {{-- PBI 28: Modal Pelaporan Toko --}}
+    <div x-show="reportModalOpen" style="display: none;" class="fixed inset-0 z-[100] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div x-show="reportModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-gray-900 bg-opacity-75 backdrop-blur-sm transition-opacity" @click="reportModalOpen = false" aria-hidden="true"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div x-show="reportModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <form action="{{ route('buyer.reports.store') }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <input type="hidden" name="seller_id" value="{{ $seller->id }}">
+                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <div class="sm:flex sm:items-start">
+                            <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                                <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                            </div>
+                            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                                <h3 class="text-lg leading-6 font-black text-gray-900" id="modal-title">Laporkan Toko</h3>
+                                <div class="mt-2 text-sm text-gray-500 font-medium">
+                                    <p>Tindakan penipuan, fiktif, atau kualitas buruk akan kami tindaklanjuti. Laporan Anda bersifat rahasia.</p>
+                                </div>
+                                
+                                <div class="mt-5 space-y-4">
+                                    <div>
+                                        <label for="kategori" class="block text-sm font-bold text-gray-700">Kategori Laporan <span class="text-red-500">*</span></label>
+                                        <select id="kategori" name="kategori" required class="mt-1.5 block w-full pl-3 pr-10 py-2.5 text-sm border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-red-500 rounded-xl bg-gray-50 font-medium">
+                                            <option value="" disabled selected>-- Pilih Kategori --</option>
+                                            <option value="Toko Fiktif">Toko Fiktif</option>
+                                            <option value="Penipuan">Penipuan</option>
+                                            <option value="Kualitas Makanan Buruk">Kualitas Makanan Buruk</option>
+                                            <option value="Lainnya">Lainnya</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="deskripsi" class="block text-sm font-bold text-gray-700">Deskripsi Kejadian <span class="text-red-500">*</span></label>
+                                        <textarea id="deskripsi" name="deskripsi" rows="3" required class="mt-1.5 block w-full text-sm border border-gray-200 bg-gray-50 rounded-xl py-2.5 px-3 focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-red-500 font-medium" placeholder="Ceritakan kronologi kejadian secara detail..."></textarea>
+                                    </div>
+                                    <div>
+                                        <label for="foto_bukti" class="block text-sm font-bold text-gray-700">Foto Bukti <span class="text-gray-400 font-medium text-xs">(Opsional)</span></label>
+                                        <div class="mt-1.5">
+                                            <input type="file" id="foto_bukti" name="foto_bukti" accept=".jpg,.jpeg,.png" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-red-50 file:text-red-600 hover:file:bg-red-100 border border-gray-200 rounded-xl bg-gray-50 p-1 cursor-pointer">
+                                        </div>
+                                        <p class="text-[10px] font-bold text-gray-400 mt-2 uppercase tracking-wider">Maksimal 2MB (JPG, PNG).</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-4 sm:px-6 sm:flex sm:flex-row-reverse border-t border-gray-100">
+                        <button type="submit" class="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-5 py-2.5 bg-red-600 text-sm font-bold text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto transition-colors">
+                            Kirim Laporan
+                        </button>
+                        <button type="button" @click="reportModalOpen = false" class="mt-3 w-full inline-flex justify-center rounded-xl border border-gray-200 shadow-sm px-5 py-2.5 bg-white text-sm font-bold text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-100 sm:mt-0 sm:ml-3 sm:w-auto transition-colors">
+                            Batal
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection
