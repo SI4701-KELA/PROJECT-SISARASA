@@ -7,6 +7,7 @@ use App\Http\Controllers\BuyerController;
 use App\Http\Controllers\SellerController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\FavoriteController;
+use App\Http\Controllers\ReportController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -21,7 +22,7 @@ Route::get('/dashboard', function () {
         return redirect()->route('seller.profile');
     }
     return redirect()->route('admin.dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+})->middleware(['auth', 'verified', 'check.banned'])->name('dashboard');
 
 // Admin Routes
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
@@ -35,10 +36,15 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     // PBI-24: Moderasi Pending Profile Updates
     Route::patch('/sellers/{id}/approve-update', [AdminController::class, 'approveUpdate'])->name('admin.sellers.approve-update');
     Route::patch('/sellers/{id}/reject-update', [AdminController::class, 'rejectUpdate'])->name('admin.sellers.reject-update');
+    // PBI-28: Admin Reports
+    Route::get('/reports', [AdminController::class, 'reports'])->name('admin.reports');
+    // PBI-29: Admin Report Actions
+    Route::patch('/reports/{id}/reject', [AdminController::class, 'rejectReport'])->name('admin.reports.reject');
+    Route::patch('/reports/{id}/ban-store', [AdminController::class, 'banStore'])->name('admin.reports.ban');
 });
 
 // Seller Routes
-Route::middleware(['auth', 'role:seller'])->prefix('seller')->group(function () {
+Route::middleware(['auth', 'check.banned', 'role:seller'])->prefix('seller')->group(function () {
     Route::get('/profile', [SellerController::class, 'profile'])->name('seller.profile');
     Route::post('/profile', [SellerController::class, 'updateProfile'])->name('profile.update');
     Route::post('/documents', [SellerController::class, 'uploadDocuments'])->name('seller.upload-documents');
@@ -54,7 +60,7 @@ Route::middleware(['auth', 'role:seller'])->prefix('seller')->group(function () 
 });
 
 // Buyer Routes
-Route::middleware(['auth', 'role:buyer'])->prefix('buyer')->group(function () {
+Route::middleware(['auth', 'check.banned', 'role:buyer'])->prefix('buyer')->group(function () {
     Route::get('/menu', [BuyerController::class, 'menu'])->name('buyer.menu');
 
     // Fitur PBI-10: GPS Otomatis Pembeli
@@ -66,6 +72,9 @@ Route::middleware(['auth', 'role:buyer'])->prefix('buyer')->group(function () {
     // Fitur PBI-3: Manajemen Favorit & Toko Tersimpan
     Route::post('/favorite/toggle', [FavoriteController::class, 'toggle'])->name('buyer.favorite.toggle');
     Route::get('/favorites', [FavoriteController::class, 'index'])->name('buyer.favorites.index');
+
+    // Fitur PBI-28: Pelaporan Toko
+    Route::post('/reports', [ReportController::class, 'store'])->name('buyer.reports.store');
 });
 
 Route::middleware('auth')->group(function () {

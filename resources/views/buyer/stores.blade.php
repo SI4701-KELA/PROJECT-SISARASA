@@ -65,7 +65,10 @@
                                 4.8 <span class="text-gray-400 font-medium ml-1">(120 Ulasan)</span>
                             </div>
                         </div>
+                            </div>
+                        </div>
                     </div>
+<<<<<<< Updated upstream
 
                     {{-- Middle Section: Location & Badges --}}
                     <div class="mb-6">
@@ -92,6 +95,8 @@
                     </div>
                 </div>
             @endforeach
+        </div>
+    @endif
         </div>
     @endif
 </div>

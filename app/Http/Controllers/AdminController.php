@@ -90,4 +90,35 @@ class AdminController extends Controller
 
         return redirect()->route('admin.stores')->with('success', '❌ Usulan perubahan profil toko "' . $seller->store_name . '" telah ditolak.');
     }
+
+    public function reports()
+    {
+        $reports = \App\Models\Report::with(['buyer', 'seller'])->latest()->get();
+        return view('admin.reports', compact('reports'));
+    }
+
+    public function rejectReport($id)
+    {
+        $report = \App\Models\Report::findOrFail($id);
+        $report->status = 'Ditolak';
+        $report->save();
+
+        return redirect()->route('admin.reports')->with('success', 'Laporan telah ditolak.');
+    }
+
+    public function banStore($id)
+    {
+        $report = \App\Models\Report::with('seller.user')->findOrFail($id);
+        
+        $report->status = 'Selesai';
+        $report->save();
+
+        if ($report->seller && $report->seller->user) {
+            $user = $report->seller->user;
+            $user->is_banned = true;
+            $user->save();
+        }
+
+        return redirect()->route('admin.reports')->with('success', 'Toko berhasil diblokir secara permanen.');
+    }
 }
