@@ -72,16 +72,26 @@
         @else
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 @foreach($sellers as $seller)
-                    <div class="bg-white rounded-[24px] overflow-hidden shadow-sm border border-gray-100 flex flex-col hover:shadow-md transition-all duration-300">
-                        {{-- Green Header --}}
-                        <div class="bg-[#1e9d8b] p-5 relative">
+                    @php
+                        $isVeryClose = isset($seller->distance) && $seller->distance <= 5;
+                    @endphp
+                    <div class="bg-white rounded-[24px] overflow-hidden shadow-sm flex flex-col transition-all duration-300 {{ $isVeryClose ? 'border-2 border-orange-400 ring-4 ring-orange-50 hover:-translate-y-1 hover:shadow-xl hover:shadow-orange-100' : 'border border-gray-100 hover:shadow-md' }}">
+                        {{-- Header --}}
+                        <div class="{{ $isVeryClose ? 'bg-gradient-to-r from-terracotta to-orange-500' : 'bg-[#1e9d8b]' }} p-5 relative">
                             @if(isset($seller->distance))
-                                <div class="absolute top-4 right-4 bg-white text-[#1e9d8b] font-black text-[10px] px-2.5 py-1 rounded-full shadow-sm">
-                                    {{ number_format($seller->distance, 1) }} KM
+                                <div class="absolute top-4 right-4 flex flex-col items-end gap-1.5">
+                                    <div class="bg-white {{ $isVeryClose ? 'text-terracotta' : 'text-[#1e9d8b]' }} font-black text-[10px] px-2.5 py-1 rounded-full shadow-sm">
+                                        {{ number_format($seller->distance, 1, ',', '.') }} KM
+                                    </div>
+                                    @if($isVeryClose)
+                                        <div class="bg-yellow-300 text-yellow-900 font-black text-[8px] px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1 animate-pulse uppercase tracking-wider">
+                                            🔥 Super Dekat
+                                        </div>
+                                    @endif
                                 </div>
                             @endif
                             <h2 class="text-white font-bold text-lg mb-1 pr-16 truncate">{{ $seller->store_name ?? 'Toko Default' }}</h2>
-                            <p class="text-white/80 text-sm font-medium mb-3 truncate">{{ $seller->address ?? '-' }}</p>
+                            <p class="text-white/80 text-sm font-medium mb-3 truncate pr-16">{{ $seller->address ?? '-' }}</p>
                             <div class="flex items-center text-white/90 text-xs font-semibold">
                                 <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                 Jam: {{ $seller->open_time ? date('H:i', strtotime($seller->open_time)) : '--:--' }} - {{ $seller->close_time ? date('H:i', strtotime($seller->close_time)) : '--:--' }}

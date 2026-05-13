@@ -9,9 +9,6 @@ use Illuminate\Support\Facades\Hash;
 
 class AccountPasswordController extends Controller
 {
-    /**
-     * POST/PATCH — ganti kata sandi; user id dari sesi autentikasi.
-     */
     public function update(ChangePasswordRequest $request): JsonResponse
     {
         $user = $request->user();

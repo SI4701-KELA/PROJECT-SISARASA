@@ -86,7 +86,6 @@ class BuyerController extends Controller
         
         return view('buyer.stores', compact('sellers', 'userFavorites'));
     }
-
     /**
      * Menampilkan halaman detail toko: profil toko + semua produknya.
      */

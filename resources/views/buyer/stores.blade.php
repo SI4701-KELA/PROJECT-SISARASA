@@ -1,5 +1,6 @@
 @extends('layouts.buyer')
 
+<<<<<<< Rayhan
 @section('title', 'Daftar Toko')
 
 @section('content')
@@ -16,6 +17,16 @@
     <span class="text-sm font-bold text-gray-700">{{ $sellers->count() }} Toko</span>
   </div>
 </div>
+=======
+
+        {{-- Flash Message --}}
+        @if(session('success'))
+            <div class="mb-6 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-medium flex items-center gap-2">
+                <svg class="w-5 h-5 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                {{ session('success') }}
+            </div>
+        @endif
+>>>>>>> main
 
 {{-- Flash Message --}}
 @if(session('success'))
@@ -96,6 +107,7 @@
         </span>
       </div>
     </div>
+<<<<<<< Rayhan
 
     {{-- Action Button --}}
     <div class="px-5 pb-5">
@@ -111,3 +123,7 @@
 @endif
 
 @endsection
+=======
+@endcomponent
+
+>>>>>>> main
