@@ -27,8 +27,4 @@ class CheckBanned
 
         return $next($request);
     }
-<<<<<<< Rayhan
 }
-=======
-}
->>>>>>> main

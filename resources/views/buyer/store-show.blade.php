@@ -139,8 +139,6 @@
             @endif
 
         </div>
-<<<<<<< Rayhan
-
         {{-- PBI 28 + PBI 20: Tombol Aksi (Conflict Resolved) --}}
         <div class="px-6 pb-6 pt-2">
             <div class="pt-4 border-t border-gray-100 flex justify-end gap-2">
@@ -165,11 +163,6 @@
                 @endif
                 
                 {{-- PBI-28: Laporkan Toko Button --}}
-=======
-        {{-- PBI 28: Laporkan Toko Button --}}
-        <div class="px-6 pb-6 pt-2">
-            <div class="pt-4 border-t border-gray-100 flex justify-end">
->>>>>>> main
                 <button @click="reportModalOpen = true" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors border border-red-100 shadow-sm">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"/>
@@ -254,11 +247,49 @@
                         </div>
                     </div>
 
-                    {{-- Stock Badge --}}
+                    {{-- PBI 14: Input Porsi (Stepper) --}}
+                    @php
+                        $isSurplus = $activeDiscount ? true : false;
+                        $currentStock = $isSurplus ? ($product->stock->qty_surplus ?? 0) : ($product->stock->qty_reg ?? 0);
+                        $stockLabel = $isSurplus ? 'Stok Sisa' : 'Stok Reguler';
+                    @endphp
+                    
                     @if($product->stock ?? false)
-                        <span class="shrink-0 text-xs font-semibold text-gray-400 bg-gray-50 border border-gray-100 px-2 py-1 rounded-lg">
-                            Stok: {{ $product->stock->quantity ?? 0 }}
-                        </span>
+                        <div x-data="{ 
+                                qty: 0, 
+                                maxQty: {{ $currentStock }},
+                                addToCart() {
+                                    if(this.qty > 0) {
+                                        alert('Berhasil menambahkan ' + this.qty + ' porsi ' + '{{ $product->name }}' + ' ke keranjang!');
+                                        this.qty = 0;
+                                    }
+                                }
+                             }" class="flex flex-col items-end gap-2">
+                            <span class="text-xs font-bold text-gray-500">
+                                {{ $stockLabel }}: <span x-text="maxQty"></span>
+                            </span>
+                            @if($currentStock > 0)
+                            <div class="flex items-center gap-2">
+                                <div class="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm">
+                                    <button @click="if(qty > 0) qty--" type="button" class="w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:text-[#2aab7f] transition-colors focus:outline-none focus:bg-gray-100" :class="{ 'opacity-50 cursor-not-allowed': qty == 0 }">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20 12H4"/></svg>
+                                    </button>
+                                    <div class="w-10 h-8 flex items-center justify-center border-x border-gray-200 bg-gray-50">
+                                        <span x-text="qty" class="text-sm font-bold text-gray-800"></span>
+                                    </div>
+                                    <button @click="if(qty < maxQty) qty++" type="button" class="w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:text-[#2aab7f] transition-colors focus:outline-none focus:bg-gray-100" :class="{ 'opacity-50 cursor-not-allowed': qty >= maxQty }">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                                    </button>
+                                </div>
+                                <button @click="addToCart()" x-show="qty > 0" x-transition type="button" class="h-8 px-3 flex items-center gap-1.5 bg-[#2aab7f] text-white text-xs font-bold rounded-lg hover:bg-[#239970] transition-colors shadow-sm">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                                    Keranjang
+                                </button>
+                            </div>
+                            @else
+                            <span class="text-xs font-bold text-red-500 bg-red-50 px-2 py-1 rounded-lg">Habis</span>
+                            @endif
+                        </div>
                     @endif
 
                 </div>
