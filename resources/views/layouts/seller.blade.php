@@ -41,8 +41,21 @@
       @endif
     </a>
     {{-- Daftar Pesanan --}}
-    <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 font-medium text-sm hover:text-gray-600 hover:bg-gray-50">
-      <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>Daftar Pesanan
+    @php
+      $sellerForOrders = auth()->user()->seller ?? null;
+      $pendingOrdersCount = $sellerForOrders
+        ? \App\Models\Order::where('seller_id', $sellerForOrders->id)->where('status', 'menunggu_verifikasi')->count()
+        : 0;
+    @endphp
+    <a href="{{ route('seller.orders') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm relative {{ request()->routeIs('seller.orders') ? 'tr font-semibold bg-red-50/40' : 'text-gray-400 font-medium hover:text-gray-600 hover:bg-gray-50' }}">
+      <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      Daftar Pesanan
+      @if($pendingOrdersCount > 0)
+        <span class="ml-auto bg-red-500 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full animate-pulse">{{ $pendingOrdersCount }}</span>
+      @endif
+      @if(request()->routeIs('seller.orders'))
+        <div class="sidebar-bar"></div>
+      @endif
     </a>
     {{-- Review & Ulasan --}}
     <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 font-medium text-sm hover:text-gray-600 hover:bg-gray-50">

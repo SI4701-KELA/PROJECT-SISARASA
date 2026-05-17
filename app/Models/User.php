@@ -82,4 +82,12 @@ class User extends Authenticatable
     {
         return $this->hasOne(\App\Models\Seller::class);
     }
+
+    /**
+     * Relasi ke item-item di keranjang belanja milik buyer ini.
+     */
+    public function cartItems()
+    {
+        return $this->hasMany(\App\Models\Cart::class, 'buyer_id');
+    }
 }

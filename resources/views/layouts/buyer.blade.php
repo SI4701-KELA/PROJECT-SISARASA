@@ -50,9 +50,13 @@
       @endif
     </a>
 
-    {{-- Order --}}
-    <a href="#" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl text-gray-500 font-semibold text-sm hover:text-gray-700 hover:bg-gray-50 transition-all">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>Order
+    {{-- Keranjang Belanja --}}
+    <a href="{{ route('buyer.cart') }}" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl text-sm relative transition-all {{ request()->routeIs('buyer.cart') ? 'tr font-bold bg-red-50/50 shadow-sm' : 'text-gray-500 font-semibold hover:text-gray-700 hover:bg-gray-50' }}">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+      Keranjang Belanja
+      @if(request()->routeIs('buyer.cart'))
+        <div class="sidebar-bar -left-4"></div>
+      @endif
     </a>
 
     {{-- Toko Favorit --}}
@@ -114,10 +118,11 @@
     
     <div class="flex items-center gap-8">
       {{-- Cart Icon --}}
-      <button class="relative text-gray-400 hover:text-terracotta transition-colors">
+      @php $cartCount = \App\Models\Cart::where('buyer_id', auth()->id())->count(); @endphp
+      <a href="{{ route('buyer.cart') }}" class="relative text-gray-400 hover:text-terracotta transition-colors">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-        <span class="absolute -top-1.5 -right-2 bg-red-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">0</span>
-      </button>
+        <span class="absolute -top-1.5 -right-2 bg-red-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">{{ $cartCount }}</span>
+      </a>
 
       {{-- Profile Dropdown --}}
       <div class="relative" x-data="{ open: false }" @click.away="open = false">

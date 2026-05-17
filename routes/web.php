@@ -10,7 +10,10 @@ use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ComplaintController;
 use App\Http\Controllers\AdminComplaintController;
+use App\Http\Controllers\CartController;
+use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\SellerComplaintController;
+use App\Http\Controllers\SellerOrderController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -57,6 +60,12 @@ Route::middleware(['auth', 'check.banned', 'role:seller'])->prefix('seller')->gr
     // PBI-20: Komplain Masuk ke Toko
     Route::get('/complaints', [SellerComplaintController::class, 'index'])->name('seller.complaints');
 
+    // PBI-17: Daftar Pesanan Seller
+    Route::get('/orders', [SellerOrderController::class, 'index'])->name('seller.orders');
+    Route::patch('/orders/{id}/accept', [SellerOrderController::class, 'acceptPayment'])->name('seller.orders.accept');
+    Route::patch('/orders/{id}/reject', [SellerOrderController::class, 'rejectPayment'])->name('seller.orders.reject');
+    Route::patch('/orders/{id}/ready', [SellerOrderController::class, 'markReady'])->name('seller.orders.ready');
+
     // Katalog management restricted to verified sellers
     Route::middleware('verified_seller')->group(function () {
         Route::get('/products', [SellerController::class, 'products'])->name('seller.products');
@@ -80,6 +89,16 @@ Route::middleware(['auth', 'check.banned', 'role:buyer'])->prefix('buyer')->grou
 
     // Halaman detail toko (profil + produk)
     Route::get('/store/{id}', [BuyerController::class, 'storeDetail'])->name('buyer.store.show');
+
+    // PBI-15: Keranjang Belanja
+    Route::get('/cart', [CartController::class, 'index'])->name('buyer.cart');
+    Route::patch('/cart/{id}', [CartController::class, 'update'])->name('buyer.cart.update');
+    Route::delete('/cart/{id}', [CartController::class, 'destroy'])->name('buyer.cart.destroy');
+
+    // PBI-16: Checkout & Pembayaran
+    Route::get('/checkout', [CheckoutController::class, 'index'])->name('buyer.checkout');
+    Route::post('/checkout', [CheckoutController::class, 'store'])->name('buyer.checkout.store');
+    Route::get('/checkout/success/{orderId}', [CheckoutController::class, 'success'])->name('buyer.checkout.success');
 
     // Fitur PBI-3: Manajemen Favorit & Toko Tersimpan
     Route::post('/favorite/toggle', [FavoriteController::class, 'toggle'])->name('buyer.favorite.toggle');

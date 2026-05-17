@@ -20,6 +20,7 @@ class Seller extends Model
         'document_path',
         'verified_at',
         'store_photo',
+        'qris_image',
         'open_time',
         'discount_time',
         'close_time',
