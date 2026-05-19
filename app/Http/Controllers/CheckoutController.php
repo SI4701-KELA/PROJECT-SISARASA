@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Cart;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Stock;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -139,6 +140,37 @@ class CheckoutController extends Controller
             foreach ($orderItemsData as $itemData) {
                 $order->items()->create($itemData);
             }
+
+            // ─── POTONG STOK REAL-TIME (dengan Race-Condition Protection) ───
+            foreach ($orderItemsData as $itemData) {
+                // lockForUpdate() mengunci baris di DB agar tidak bisa dibaca
+                // oleh transaksi lain sampai transaksi ini selesai (commit/rollback).
+                // Ini mencegah 2 pembeli membeli stok yang sama secara bersamaan.
+                $stock = Stock::where('product_id', $itemData['product_id'])
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$stock) {
+                    throw new \Exception('Data stok tidak ditemukan untuk produk ID ' . $itemData['product_id'] . '.');
+                }
+
+                if ($itemData['is_surplus']) {
+                    // Jalur SURPLUS: kurangi qty_surplus
+                    if ($stock->qty_surplus < $itemData['qty']) {
+                        throw new \Exception('Maaf, stok baru saja habis dipesan orang lain.');
+                    }
+                    $stock->qty_surplus -= $itemData['qty'];
+                } else {
+                    // Jalur REGULER: kurangi qty_reg
+                    if ($stock->qty_reg < $itemData['qty']) {
+                        throw new \Exception('Maaf, stok baru saja habis dipesan orang lain.');
+                    }
+                    $stock->qty_reg -= $itemData['qty'];
+                }
+
+                $stock->save();
+            }
+            // ─────────────────────────────────────────────────────────────────
 
             // Kosongkan keranjang
             Cart::where('buyer_id', $buyerId)->delete();
