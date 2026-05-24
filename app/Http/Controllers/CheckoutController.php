@@ -100,11 +100,29 @@ class CheckoutController extends Controller
             $orderItemsData = [];
 
             foreach ($cartItems as $item) {
-                if ($item->is_surplus && $item->product->discount) {
-                    $price = $item->product->discount->discount_price;
+                // Lock stock for update to prevent race conditions
+                $stock = \App\Models\Stock::where('product_id', $item->product_id)->lockForUpdate()->first();
+
+                if ($item->is_surplus) {
+                    if ($stock->qty_surplus < $item->qty) {
+                        throw new \Exception("Stok surplus untuk {$item->product->name} tidak mencukupi.");
+                    }
+                    $stock->qty_surplus -= $item->qty;
+                    if ($item->product->discount) {
+                        $price = $item->product->discount->discount_price;
+                    } else {
+                        $price = $item->product->base_price;
+                    }
                 } else {
+                    if ($stock->qty_reg < $item->qty) {
+                        throw new \Exception("Stok reguler untuk {$item->product->name} tidak mencukupi.");
+                    }
+                    $stock->qty_reg -= $item->qty;
                     $price = $item->product->base_price;
                 }
+                
+                // Save the deducted stock
+                $stock->save();
 
                 $subtotal = $price * $item->qty;
                 $grandTotal += $subtotal;
