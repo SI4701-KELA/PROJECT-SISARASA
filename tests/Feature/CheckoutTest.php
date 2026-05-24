@@ -447,4 +447,112 @@ class CheckoutTest extends TestCase
         $response->assertSessionHasErrors('payment_proof');
         $this->assertDatabaseCount('orders', 0);
     }
+
+    // =========================================================================
+    // Additional: Stok terpotong setelah checkout reguler
+    // =========================================================================
+    public function test_stock_deducted_after_regular_checkout(): void
+    {
+        $eco = $this->createEcosystem([
+            'base_price' => 20000,
+            'cart_qty' => 3,
+            'cart_is_surplus' => false,
+            'qty_reg' => 10,
+        ]);
+
+        $this->actingAs($eco['buyer'])->post(route('buyer.checkout.store'), [
+            'payment_method' => 'cash',
+        ]);
+
+        // Stok reguler harus berkurang dari 10 → 7
+        $eco['stock']->refresh();
+        $this->assertEquals(7, $eco['stock']->qty_reg);
+    }
+
+    // =========================================================================
+    // Additional: Stok surplus terpotong setelah checkout surplus
+    // =========================================================================
+    public function test_stock_deducted_after_surplus_checkout(): void
+    {
+        Storage::fake('public');
+
+        $eco = $this->createEcosystem([
+            'discount_price' => 15000,
+            'cart_qty' => 2,
+            'cart_is_surplus' => true,
+            'qty_surplus' => 5,
+            'qris_image' => 'qris/toko_test.png',
+        ]);
+
+        $fakeProof = UploadedFile::fake()->image('bukti.jpg', 200, 200);
+
+        $this->actingAs($eco['buyer'])->post(route('buyer.checkout.store'), [
+            'payment_method' => 'qris',
+            'payment_proof' => $fakeProof,
+        ]);
+
+        // Stok surplus harus berkurang dari 5 → 3
+        $eco['stock']->refresh();
+        $this->assertEquals(3, $eco['stock']->qty_surplus);
+    }
+
+    // =========================================================================
+    // Additional: Halaman sukses menampilkan informasi pesanan yang benar
+    // =========================================================================
+    public function test_success_page_shows_order_details(): void
+    {
+        $eco = $this->createEcosystem([
+            'base_price' => 25000,
+            'cart_qty' => 2,
+            'cart_is_surplus' => false,
+        ]);
+
+        $this->actingAs($eco['buyer'])->post(route('buyer.checkout.store'), [
+            'payment_method' => 'cash',
+        ]);
+
+        $order = Order::where('buyer_id', $eco['buyer']->id)->first();
+
+        $response = $this->actingAs($eco['buyer'])
+            ->get(route('buyer.checkout.success', $order->id));
+
+        $response->assertStatus(200);
+        $response->assertSee('#' . $order->id);
+        $response->assertSee('Diproses'); // Status cash = diproses
+        $response->assertSee('cash');
+        $response->assertSee('Rp 50.000'); // 25000 * 2
+    }
+
+    // =========================================================================
+    // Additional: Halaman sukses QRIS menampilkan status Menunggu Verifikasi
+    // =========================================================================
+    public function test_success_page_shows_menunggu_verifikasi_for_qris(): void
+    {
+        Storage::fake('public');
+
+        $eco = $this->createEcosystem([
+            'base_price' => 25000,
+            'discount_price' => 15000,
+            'cart_qty' => 1,
+            'cart_is_surplus' => true,
+            'qris_image' => 'qris/toko_test.png',
+        ]);
+
+        $fakeProof = UploadedFile::fake()->image('bukti.jpg', 200, 200);
+
+        $this->actingAs($eco['buyer'])->post(route('buyer.checkout.store'), [
+            'payment_method' => 'qris',
+            'payment_proof' => $fakeProof,
+        ]);
+
+        $order = Order::where('buyer_id', $eco['buyer']->id)->first();
+
+        $response = $this->actingAs($eco['buyer'])
+            ->get(route('buyer.checkout.success', $order->id));
+
+        $response->assertStatus(200);
+        $response->assertSee('Menunggu Verifikasi');
+        $response->assertSee('qris');
+    }
 }
+

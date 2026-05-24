@@ -92,6 +92,7 @@ Route::middleware(['auth', 'check.banned', 'role:buyer'])->prefix('buyer')->grou
 
     // PBI-15: Keranjang Belanja
     Route::get('/cart', [CartController::class, 'index'])->name('buyer.cart');
+    Route::post('/cart', [CartController::class, 'store'])->name('buyer.cart.store');
     Route::patch('/cart/{id}', [CartController::class, 'update'])->name('buyer.cart.update');
     Route::delete('/cart/{id}', [CartController::class, 'destroy'])->name('buyer.cart.destroy');
 
