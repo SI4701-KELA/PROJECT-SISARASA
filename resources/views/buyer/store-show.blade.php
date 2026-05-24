@@ -258,10 +258,40 @@
                         <div x-data="{ 
                                 qty: 0, 
                                 maxQty: {{ $currentStock }},
-                                addToCart() {
-                                    if(this.qty > 0) {
-                                        alert('Berhasil menambahkan ' + this.qty + ' porsi ' + '{{ $product->name }}' + ' ke keranjang!');
-                                        this.qty = 0;
+                                loading: false,
+                                async addToCart() {
+                                    if(this.qty > 0 && !this.loading) {
+                                        this.loading = true;
+                                        try {
+                                            const res = await fetch('{{ route('buyer.cart.store') }}', {
+                                                method: 'POST',
+                                                headers: {
+                                                    'Content-Type': 'application/json',
+                                                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                                    'Accept': 'application/json'
+                                                },
+                                                body: JSON.stringify({
+                                                    product_id: {{ $product->id }},
+                                                    qty: this.qty,
+                                                    is_surplus: {{ $isSurplus ? 'true' : 'false' }}
+                                                })
+                                            });
+                                            const data = await res.json();
+                                            if (res.ok && data.success) {
+                                                showCartToast(data.message || 'Berhasil menambahkan ke keranjang!');
+                                                // Update cart badge count in header
+                                                const badge = document.querySelector('.cart-badge-count');
+                                                if (badge) badge.textContent = data.cart_count;
+                                                this.maxQty = Math.max(0, this.maxQty - this.qty);
+                                                this.qty = 0;
+                                            } else {
+                                                showCartToast(data.error || 'Gagal menambahkan ke keranjang.', true);
+                                            }
+                                        } catch (e) {
+                                            showCartToast('Terjadi kesalahan jaringan.', true);
+                                        } finally {
+                                            this.loading = false;
+                                        }
                                     }
                                 }
                              }" class="flex flex-col items-end gap-2">
@@ -281,9 +311,16 @@
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
                                     </button>
                                 </div>
-                                <button @click="addToCart()" x-show="qty > 0" x-transition type="button" class="h-8 px-3 flex items-center gap-1.5 bg-[#2aab7f] text-white text-xs font-bold rounded-lg hover:bg-[#239970] transition-colors shadow-sm">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                                    Keranjang
+                                <button @click="addToCart()" x-show="qty > 0" x-transition type="button" 
+                                        class="h-8 px-3 flex items-center gap-1.5 bg-[#2aab7f] text-white text-xs font-bold rounded-lg hover:bg-[#239970] transition-colors shadow-sm disabled:opacity-50"
+                                        :disabled="loading">
+                                    <template x-if="!loading">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                                    </template>
+                                    <template x-if="loading">
+                                        <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                                    </template>
+                                    <span x-text="loading ? 'Menambahkan...' : 'Keranjang'"></span>
                                 </button>
                             </div>
                             @else

@@ -47,6 +47,10 @@ class BuyerController extends Controller
             
             $sellers = Seller::select('*')
                 ->where('verification_status', 'approved')
+=======
+            // Ambil semua seller yang approved, tidak banned, dan punya koordinat
+            $sellers = Seller::where('verification_status', 'approved')
+>>>>>>> Stashed changes
                 ->whereHas('user', function ($q) {
                     $q->where('is_banned', false);
                 })

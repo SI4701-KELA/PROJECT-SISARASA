@@ -444,4 +444,249 @@ class CartTest extends TestCase
         // Item masih ada
         $this->assertDatabaseHas('carts', ['id' => $cart->id]);
     }
+
+    // =========================================================================
+    // TC-CRT-ADD-001: Menguji penambahan item reguler ke keranjang
+    // =========================================================================
+    public function test_add_regular_item_to_cart(): void
+    {
+        $eco = $this->createEcosystem([
+            'base_price' => 25000,
+            'qty_reg' => 10,
+        ]);
+
+        $response = $this->actingAs($eco['buyer'])
+            ->postJson(route('buyer.cart.store'), [
+                'product_id' => $eco['product']->id,
+                'qty' => 2,
+                'is_surplus' => false,
+            ]);
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'success' => true,
+            'message' => 'Berhasil menambahkan ke keranjang!',
+        ]);
+
+        $this->assertDatabaseHas('carts', [
+            'buyer_id' => $eco['buyer']->id,
+            'product_id' => $eco['product']->id,
+            'qty' => 2,
+            'is_surplus' => false,
+        ]);
+    }
+
+    // =========================================================================
+    // TC-CRT-ADD-002: Menguji penambahan item surplus ke keranjang
+    // =========================================================================
+    public function test_add_surplus_item_to_cart(): void
+    {
+        $eco = $this->createEcosystem([
+            'discount_price' => 15000,
+            'qty_surplus' => 5,
+        ]);
+
+        $response = $this->actingAs($eco['buyer'])
+            ->postJson(route('buyer.cart.store'), [
+                'product_id' => $eco['product']->id,
+                'qty' => 3,
+                'is_surplus' => true,
+            ]);
+
+        $response->assertStatus(200);
+        $response->assertJson(['success' => true]);
+
+        $this->assertDatabaseHas('carts', [
+            'buyer_id' => $eco['buyer']->id,
+            'product_id' => $eco['product']->id,
+            'qty' => 3,
+            'is_surplus' => true,
+        ]);
+    }
+
+    // =========================================================================
+    // TC-CRT-ADD-003: Menguji validasi stok saat menambah ke keranjang
+    // =========================================================================
+    public function test_add_to_cart_rejected_when_exceeds_stock(): void
+    {
+        $eco = $this->createEcosystem([
+            'qty_reg' => 3, // Stok reguler hanya 3
+        ]);
+
+        $response = $this->actingAs($eco['buyer'])
+            ->postJson(route('buyer.cart.store'), [
+                'product_id' => $eco['product']->id,
+                'qty' => 5, // Melebihi stok
+                'is_surplus' => false,
+            ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonStructure(['error']);
+
+        // Tidak ada item di keranjang
+        $this->assertDatabaseMissing('carts', [
+            'buyer_id' => $eco['buyer']->id,
+            'product_id' => $eco['product']->id,
+        ]);
+    }
+
+    // =========================================================================
+    // TC-CRT-ADD-004: Menguji validasi stok surplus saat menambah ke keranjang
+    // =========================================================================
+    public function test_add_surplus_to_cart_rejected_when_exceeds_surplus_stock(): void
+    {
+        $eco = $this->createEcosystem([
+            'qty_surplus' => 2, // Stok surplus hanya 2
+        ]);
+
+        $response = $this->actingAs($eco['buyer'])
+            ->postJson(route('buyer.cart.store'), [
+                'product_id' => $eco['product']->id,
+                'qty' => 3, // Melebihi stok surplus
+                'is_surplus' => true,
+            ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonStructure(['error']);
+    }
+
+    // =========================================================================
+    // TC-CRT-ADD-005: Menguji duplikat item di keranjang (merge qty)
+    // =========================================================================
+    public function test_add_duplicate_item_merges_qty_instead_of_creating_new_row(): void
+    {
+        $eco = $this->createEcosystem([
+            'qty_reg' => 10,
+        ]);
+
+        // Tambah pertama kali: qty=2
+        $this->actingAs($eco['buyer'])
+            ->postJson(route('buyer.cart.store'), [
+                'product_id' => $eco['product']->id,
+                'qty' => 2,
+                'is_surplus' => false,
+            ]);
+
+        // Tambah lagi: qty=3 → total harus 5
+        $response = $this->actingAs($eco['buyer'])
+            ->postJson(route('buyer.cart.store'), [
+                'product_id' => $eco['product']->id,
+                'qty' => 3,
+                'is_surplus' => false,
+            ]);
+
+        $response->assertStatus(200);
+        $response->assertJson(['success' => true]);
+
+        // Hanya 1 baris di database (merge, bukan duplikat)
+        $cartItems = Cart::where('buyer_id', $eco['buyer']->id)
+            ->where('product_id', $eco['product']->id)
+            ->where('is_surplus', false)
+            ->get();
+
+        $this->assertCount(1, $cartItems);
+        $this->assertEquals(5, $cartItems->first()->qty);
+    }
+
+    // =========================================================================
+    // TC-CRT-ADD-006: Menguji duplikat item merge ditolak jika total melebihi stok
+    // =========================================================================
+    public function test_add_duplicate_item_rejected_when_total_exceeds_stock(): void
+    {
+        $eco = $this->createEcosystem([
+            'qty_reg' => 5,
+        ]);
+
+        // Tambah pertama kali: qty=3
+        $this->actingAs($eco['buyer'])
+            ->postJson(route('buyer.cart.store'), [
+                'product_id' => $eco['product']->id,
+                'qty' => 3,
+                'is_surplus' => false,
+            ]);
+
+        // Tambah lagi: qty=3 → total 6, melebihi stok 5
+        $response = $this->actingAs($eco['buyer'])
+            ->postJson(route('buyer.cart.store'), [
+                'product_id' => $eco['product']->id,
+                'qty' => 3,
+                'is_surplus' => false,
+            ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonStructure(['error']);
+
+        // Qty tetap 3 (tidak berubah)
+        $this->assertDatabaseHas('carts', [
+            'buyer_id' => $eco['buyer']->id,
+            'product_id' => $eco['product']->id,
+            'qty' => 3,
+        ]);
+    }
+
+    // =========================================================================
+    // TC-CRT-ADD-007: Menguji validasi qty minimal 1
+    // =========================================================================
+    public function test_add_to_cart_rejected_with_zero_qty(): void
+    {
+        $eco = $this->createEcosystem();
+
+        $response = $this->actingAs($eco['buyer'])
+            ->postJson(route('buyer.cart.store'), [
+                'product_id' => $eco['product']->id,
+                'qty' => 0,
+                'is_surplus' => false,
+            ]);
+
+        $response->assertStatus(422); // Validation error
+    }
+
+    // =========================================================================
+    // TC-CRT-ADD-008: Menguji validasi product_id yang tidak ada
+    // =========================================================================
+    public function test_add_to_cart_rejected_with_nonexistent_product(): void
+    {
+        $eco = $this->createEcosystem();
+
+        $response = $this->actingAs($eco['buyer'])
+            ->postJson(route('buyer.cart.store'), [
+                'product_id' => 99999,
+                'qty' => 1,
+                'is_surplus' => false,
+            ]);
+
+        $response->assertStatus(422); // Validation error
+    }
+
+    // =========================================================================
+    // TC-CRT-ADD-009: Menguji cart_count dikembalikan setelah add to cart
+    // =========================================================================
+    public function test_add_to_cart_returns_correct_cart_count(): void
+    {
+        $eco = $this->createEcosystem([
+            'qty_reg' => 10,
+            'qty_surplus' => 5,
+        ]);
+
+        // Tambah item reguler
+        $response1 = $this->actingAs($eco['buyer'])
+            ->postJson(route('buyer.cart.store'), [
+                'product_id' => $eco['product']->id,
+                'qty' => 1,
+                'is_surplus' => false,
+            ]);
+
+        $response1->assertJson(['cart_count' => 1]);
+
+        // Tambah item surplus (produk sama, is_surplus beda → baris baru)
+        $response2 = $this->actingAs($eco['buyer'])
+            ->postJson(route('buyer.cart.store'), [
+                'product_id' => $eco['product']->id,
+                'qty' => 1,
+                'is_surplus' => true,
+            ]);
+
+        $response2->assertJson(['cart_count' => 2]);
+    }
 }
+

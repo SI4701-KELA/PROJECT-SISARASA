@@ -121,7 +121,7 @@
       @php $cartCount = \App\Models\Cart::where('buyer_id', auth()->id())->count(); @endphp
       <a href="{{ route('buyer.cart') }}" class="relative text-gray-400 hover:text-terracotta transition-colors">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-        <span class="absolute -top-1.5 -right-2 bg-red-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">{{ $cartCount }}</span>
+        <span class="cart-badge-count absolute -top-1.5 -right-2 bg-red-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">{{ $cartCount }}</span>
       </a>
 
       {{-- Profile Dropdown --}}
@@ -160,6 +160,46 @@
 <script>
 function buyerPanel() {
   return {}
+}
+
+// Global toast notification for cart actions
+function showCartToast(message, isError = false) {
+    // Create toast container if it doesn't exist
+    let container = document.getElementById('cart-toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'cart-toast-container';
+        container.style.cssText = 'position:fixed;top:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;';
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        display:flex;align-items:center;gap:10px;padding:14px 20px;border-radius:16px;
+        font-size:14px;font-weight:600;color:white;min-width:280px;max-width:400px;
+        box-shadow:0 8px 32px rgba(0,0,0,0.18);backdrop-filter:blur(12px);
+        transform:translateX(120%);transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);
+        background:${isError ? 'linear-gradient(135deg,#ef4444,#dc2626)' : 'linear-gradient(135deg,#2aab7f,#1d8a63)'};
+    `;
+    
+    const icon = isError 
+        ? '<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01M12 3a9 9 0 100 18 9 9 0 000-18z"/></svg>'
+        : '<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+    
+    toast.innerHTML = icon + '<span>' + message + '</span>';
+    container.appendChild(toast);
+
+    // Animate in
+    requestAnimationFrame(() => {
+        toast.style.transform = 'translateX(0)';
+    });
+
+    // Auto dismiss after 3 seconds
+    setTimeout(() => {
+        toast.style.transform = 'translateX(120%)';
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 400);
+    }, 3000);
 }
 </script>
 </body>
