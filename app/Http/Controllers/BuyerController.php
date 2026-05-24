@@ -41,23 +41,11 @@ class BuyerController extends Controller
             $lat = (float) $request->lat;
             $lng = (float) $request->lng;
             
-<<<<<<< Updated upstream
-            // Rumus Haversine untuk kalkulasi jarak (dalam KM)
-            $haversineRaw = '( 6371 * acos( cos( radians(?) ) * cos( radians( latitude ) ) * cos( radians( longitude ) - radians(?) ) + sin( radians(?) ) * sin( radians( latitude ) ) ) ) AS distance';
-            
-            $sellers = Seller::select('*')
-                ->where('verification_status', 'approved')
-=======
             // Ambil semua seller yang approved, tidak banned, dan punya koordinat
             $sellers = Seller::where('verification_status', 'approved')
->>>>>>> Stashed changes
                 ->whereHas('user', function ($q) {
                     $q->where('is_banned', false);
                 })
-=======
-            // Ambil semua seller yang approved dan punya koordinat
-            $sellers = Seller::where('verification_status', 'approved')
->>>>>>> Stashed changes
                 ->whereNotNull('latitude')
                 ->whereNotNull('longitude')
                 ->get()

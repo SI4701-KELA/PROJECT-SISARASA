@@ -220,13 +220,25 @@ class SellerController extends Controller
 
             $product->update($data);
 
+            $isActiveDiscount = $product->discount && $product->discount->is_active;
+
             if ($product->stock) {
-                $product->stock->update(['qty_reg' => $request->qty_reg]);
+                if ($isActiveDiscount) {
+                    $product->stock->update([
+                        'qty_surplus' => $request->qty_reg,
+                        'qty_reg' => 0
+                    ]);
+                } else {
+                    $product->stock->update([
+                        'qty_reg' => $request->qty_reg,
+                        'qty_surplus' => 0
+                    ]);
+                }
             } else {
                 \App\Models\Stock::create([
                     'product_id' => $product->id,
-                    'qty_reg' => $request->qty_reg,
-                    'qty_surplus' => 0,
+                    'qty_reg' => $isActiveDiscount ? 0 : $request->qty_reg,
+                    'qty_surplus' => $isActiveDiscount ? $request->qty_reg : 0,
                 ]);
             }
 
@@ -280,11 +292,36 @@ class SellerController extends Controller
 
         $discount = $product->discount()->first();
         if ($discount) {
-            $discount->update([
-                'is_active' => !$discount->is_active
-            ]);
-            $status = $discount->is_active ? 'diaktifkan' : 'dinonaktifkan';
-            return redirect()->back()->with('success', "Diskon Sisa Rasa berhasil $status.");
+            $newStatus = !$discount->is_active;
+            
+            \Illuminate\Support\Facades\DB::beginTransaction();
+            try {
+                $discount->update(['is_active' => $newStatus]);
+                
+                // Pindahkan stok secara otomatis
+                if ($product->stock) {
+                    if ($newStatus) {
+                        // Jika promo diaktifkan, semua stok reguler pindah jadi stok surplus
+                        $product->stock->update([
+                            'qty_surplus' => $product->stock->qty_surplus + $product->stock->qty_reg,
+                            'qty_reg' => 0
+                        ]);
+                    } else {
+                        // Jika promo dinonaktifkan, semua stok surplus pindah jadi stok reguler
+                        $product->stock->update([
+                            'qty_reg' => $product->stock->qty_reg + $product->stock->qty_surplus,
+                            'qty_surplus' => 0
+                        ]);
+                    }
+                }
+                
+                \Illuminate\Support\Facades\DB::commit();
+                $status = $newStatus ? 'diaktifkan' : 'dinonaktifkan';
+                return redirect()->back()->with('success', "Diskon Sisa Rasa berhasil $status.");
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\DB::rollBack();
+                return redirect()->back()->with('error', 'Gagal mengubah status diskon.');
+            }
         }
 
         return redirect()->back()->with('error', 'Data diskon tidak ditemukan.');

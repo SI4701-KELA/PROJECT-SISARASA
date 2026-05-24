@@ -169,7 +169,7 @@ function showCartToast(message, isError = false) {
     if (!container) {
         container = document.createElement('div');
         container.id = 'cart-toast-container';
-        container.style.cssText = 'position:fixed;top:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;';
+        container.style.cssText = 'position:fixed;bottom:32px;right:32px;z-index:9999;display:flex;flex-direction:column-reverse;gap:8px;';
         document.body.appendChild(container);
     }
 
