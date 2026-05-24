@@ -38,9 +38,10 @@ class BuyerController extends Controller
         $hasLocation = $request->has('lat') && $request->has('lng');
         
         if ($hasLocation && class_exists(Seller::class)) {
-            $lat = $request->lat;
-            $lng = $request->lng;
+            $lat = (float) $request->lat;
+            $lng = (float) $request->lng;
             
+<<<<<<< Updated upstream
             // Rumus Haversine untuk kalkulasi jarak (dalam KM)
             $haversineRaw = '( 6371 * acos( cos( radians(?) ) * cos( radians( latitude ) ) * cos( radians( longitude ) - radians(?) ) + sin( radians(?) ) * sin( radians( latitude ) ) ) ) AS distance';
             
@@ -49,11 +50,27 @@ class BuyerController extends Controller
                 ->whereHas('user', function ($q) {
                     $q->where('is_banned', false);
                 })
+=======
+            // Ambil semua seller yang approved dan punya koordinat
+            $sellers = Seller::where('verification_status', 'approved')
+>>>>>>> Stashed changes
                 ->whereNotNull('latitude')
                 ->whereNotNull('longitude')
-                ->selectRaw($haversineRaw, [$lat, $lng, $lat])
-                ->orderBy('distance', 'asc')
-                ->get();
+                ->get()
+                ->map(function ($seller) use ($lat, $lng) {
+                    // Rumus Haversine untuk kalkulasi jarak (dalam KM) — dihitung di PHP agar kompatibel SQLite
+                    $earthRadius = 6371;
+                    $dLat = deg2rad($seller->latitude - $lat);
+                    $dLng = deg2rad($seller->longitude - $lng);
+                    $a = sin($dLat / 2) * sin($dLat / 2)
+                       + cos(deg2rad($lat)) * cos(deg2rad($seller->latitude))
+                       * sin($dLng / 2) * sin($dLng / 2);
+                    $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+                    $seller->distance = round($earthRadius * $c, 2);
+                    return $seller;
+                })
+                ->sortBy('distance')
+                ->values();
         } else {
             // Jika lokasi belum dideteksi atau model belum siap
             $sellers = class_exists(Seller::class) ? Seller::whereHas('user', function($q) { $q->where('is_banned', false); })->get() : collect([]);
