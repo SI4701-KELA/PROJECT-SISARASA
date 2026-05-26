@@ -14,6 +14,11 @@ class Order extends Model
         'payment_proof',
         'status',
         'cancellation_reason',
+        'pickup_deadline',
+    ];
+
+    protected $casts = [
+        'pickup_deadline' => 'datetime',
     ];
 
     public function buyer()

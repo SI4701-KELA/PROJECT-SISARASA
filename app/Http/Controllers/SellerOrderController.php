@@ -104,7 +104,25 @@ class SellerOrderController extends Controller
             ->where('status', 'diproses')
             ->firstOrFail();
 
-        $order->update(['status' => 'siap_diambil']);
+        $now = now();
+        $pickupDeadline = $now->copy()->addHours(2);
+        
+        if ($seller->close_time) {
+            $closeTime = now()->setTimeFromTimeString($seller->close_time);
+            
+            if ($closeTime->lessThan($now)) {
+                $closeTime->addDay();
+            }
+
+            if ($pickupDeadline->greaterThan($closeTime)) {
+                $pickupDeadline = $closeTime;
+            }
+        }
+
+        $order->update([
+            'status' => 'siap_diambil',
+            'pickup_deadline' => $pickupDeadline
+        ]);
 
         return redirect()->route('seller.orders', ['tab' => 'siap'])
             ->with('success', 'Pesanan #' . $order->id . ' siap diambil oleh pembeli.');

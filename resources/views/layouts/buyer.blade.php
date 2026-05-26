@@ -74,8 +74,12 @@
     </a>
 
     {{-- Riwayat Pesanan --}}
-    <a href="#" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl text-gray-500 font-semibold text-sm hover:text-gray-700 hover:bg-gray-50 transition-all">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Riwayat Pesanan
+    <a href="{{ route('buyer.orders.index') }}" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl text-sm relative transition-all {{ request()->routeIs('buyer.orders.*') ? 'tr font-bold bg-red-50/50 shadow-sm' : 'text-gray-500 font-semibold hover:text-gray-700 hover:bg-gray-50' }}">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      Riwayat Pesanan
+      @if(request()->routeIs('buyer.orders.*'))
+        <div class="sidebar-bar -left-4"></div>
+      @endif
     </a>
 
     {{-- Pusat Bantuan (Komplain) --}}

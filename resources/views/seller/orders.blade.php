@@ -163,22 +163,22 @@
                         </button>
                     @endif
 
-                    {{-- Skenario A: Terima Pembayaran (menunggu_verifikasi → diproses) --}}
+                    {{-- Skenario A: Terima Pesanan (menunggu_verifikasi → diproses) --}}
                     @if($order->status === 'menunggu_verifikasi')
                         <form action="{{ route('seller.orders.accept', $order->id) }}" method="POST" class="inline">
                             @csrf @method('PATCH')
                             <button type="submit" class="px-4 py-2 text-xs font-bold text-white bg-green-500 rounded-xl hover:bg-green-600 transition-colors btn-terima">
                                 <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                                Terima Pembayaran
+                                Terima Pesanan
                             </button>
                         </form>
 
-                        {{-- Skenario B: Tolak Pembayaran (menunggu_verifikasi → dibatalkan) --}}
+                        {{-- Skenario B: Tolak Pesanan (menunggu_verifikasi → dibatalkan) --}}
                         <button type="button"
                                 class="px-4 py-2 text-xs font-bold text-red-600 bg-red-50 rounded-xl hover:bg-red-100 transition-colors btn-tolak"
                                 @click="showRejectModal = true; rejectOrderId = {{ $order->id }}">
                             <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
-                            Tolak Pembayaran
+                            Tolak Pesanan
                         </button>
                     @endif
 
@@ -214,7 +214,7 @@
         </div>
     </div>
 
-    {{-- Modal: Tolak Pembayaran --}}
+    {{-- Modal: Tolak Pesanan --}}
     <div x-show="showRejectModal" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" @click.self="showRejectModal = false" style="display: none;" id="reject-modal">
         <div class="bg-white rounded-[24px] shadow-2xl max-w-md w-full p-6" @click.stop>
@@ -223,7 +223,7 @@
                     <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.27 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
                 </div>
                 <div>
-                    <h3 class="text-lg font-bold text-gray-900">Tolak Pembayaran</h3>
+                    <h3 class="text-lg font-bold text-gray-900">Tolak Pesanan</h3>
                     <p class="text-xs text-gray-500 font-medium">Pesanan akan dibatalkan secara permanen.</p>
                 </div>
             </div>

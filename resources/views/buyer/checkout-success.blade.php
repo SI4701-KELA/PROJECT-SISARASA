@@ -39,6 +39,47 @@
             </div>
         </div>
 
+        @if($order->status === 'diproses')
+            <div class="mb-6 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-xl shadow-sm text-sm">
+                Pesanan sedang disiapkan. Estimasi waktu penyiapan: <span class="font-bold">15-20 Menit</span>
+            </div>
+        @elseif($order->status === 'siap_diambil' && $order->pickup_deadline)
+            @php
+                $deadlineIso = $order->pickup_deadline->timezone('Asia/Jakarta')->toIso8601String();
+                $deadlineTime = $order->pickup_deadline->timezone('Asia/Jakarta')->format('H:i');
+            @endphp
+            <div x-data="{
+                deadline: new Date('{{ $deadlineIso }}').getTime(),
+                now: new Date().getTime(),
+                get isExpired() {
+                    return this.now >= this.deadline;
+                },
+                get timeLeft() {
+                    return Math.max(0, Math.floor((this.deadline - this.now) / 1000));
+                },
+                init() {
+                    setInterval(() => {
+                        this.now = new Date().getTime();
+                    }, 1000);
+                },
+                formatTime() {
+                    let t = this.timeLeft;
+                    let h = Math.floor(t / 3600);
+                    let m = Math.floor((t % 3600) / 60);
+                    let s = t % 60;
+                    return [h, m, s].map(v => v.toString().padStart(2, '0')).join(':');
+                }
+            }">
+                <div x-show="isExpired" style="display: none" class="mb-6 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl shadow-sm text-sm font-bold">
+                    Batas waktu pengambilan telah terlewat.
+                </div>
+                <div x-show="!isExpired" style="display: none" class="mb-6 bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-xl shadow-sm text-sm">
+                    Harap ambil pesanan Anda dalam waktu: <span class="font-bold text-red-600 font-mono text-base ml-1" x-text="formatTime()"></span>
+                    <br><span class="text-xs text-gray-600">(Batas Maksimal: {{ $deadlineTime }} WIB)</span>
+                </div>
+            </div>
+        @endif
+
         {{-- Order Details --}}
         <div class="space-y-2 mb-6">
             <div class="flex justify-between text-sm">
