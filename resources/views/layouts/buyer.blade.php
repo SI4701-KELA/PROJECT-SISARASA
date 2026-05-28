@@ -74,6 +74,22 @@
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Riwayat Pesanan
     </a>
 
+    {{-- Inbox Chat --}}
+    @php
+      $unreadChatCount = \App\Models\Message::where('receiver_id', auth()->id())
+        ->where('is_read', false)->count();
+    @endphp
+    <a href="{{ route('chat.inbox') }}" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl text-sm relative transition-all {{ request()->routeIs('chat.*') ? 'tr font-bold bg-red-50/50 shadow-sm' : 'text-gray-500 font-semibold hover:text-gray-700 hover:bg-gray-50' }}">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+      Inbox Chat
+      @if($unreadChatCount > 0)
+        <span class="ml-auto bg-red-500 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full animate-pulse">{{ $unreadChatCount > 9 ? '9+' : $unreadChatCount }}</span>
+      @endif
+      @if(request()->routeIs('chat.*'))
+        <div class="sidebar-bar -left-4"></div>
+      @endif
+    </a>
+
     {{-- Pusat Bantuan (Komplain) --}}
     @php
       $activeComplaintsCount = \App\Models\Complaint::where('buyer_id', auth()->id())

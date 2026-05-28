@@ -3,11 +3,68 @@
 namespace App\Http\Controllers;
 
 use App\Models\Seller;
+use App\Models\Order;
+use App\Models\OrderItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 class AdminController extends Controller
 {
+    /**
+     * PBI-22: Impact Tracker — Dampak Sosial & Lingkungan Platform.
+     * Agregasi HANYA dari orders.status = 'Selesai' DAN order_items.is_surplus = true.
+     */
+    public function impactTracker()
+    {
+        // Base constraint: hanya order_items surplus dari pesanan Selesai
+        $surplusBaseQuery = function ($q) {
+            $q->where('status', 'Selesai');
+        };
+
+        // Metrik 1 — Total Food Saved (porsi)
+        $totalFoodSaved = (int) OrderItem::where('is_surplus', true)
+            ->whereHas('order', $surplusBaseQuery)
+            ->sum('qty');
+
+        // Metrik 2 — Nilai Finansial Diselamatkan (Rupiah)
+        // Menggunakan single query dengan DB::raw untuk efisiensi, menghindari ->get() lalu iterasi collection
+        $financialSaved = (int) OrderItem::where('is_surplus', true)
+            ->whereHas('order', $surplusBaseQuery)
+            ->sum(DB::raw('qty * price'));
+
+        // Metrik 3 — Dampak Lingkungan (Asumsi 1 porsi = 0.5 Kg CO2 dicegah)
+        $carbonSaved = round($totalFoodSaved * 0.5, 1);
+
+        // Metrik 4 — Total UMKM Kontributor (seller_id unik)
+        $totalUmkm = (int) Order::where('status', 'Selesai')
+            ->whereHas('items', function ($q) {
+                $q->where('is_surplus', true);
+            })
+            ->distinct('seller_id')
+            ->count('seller_id');
+
+        // Bonus — Top 5 Pahlawan UMKM (seller yang paling banyak menjual porsi surplus Selesai)
+        $topSellers = DB::table('order_items')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->join('sellers', 'orders.seller_id', '=', 'sellers.id')
+            ->where('order_items.is_surplus', true)
+            ->where('orders.status', 'Selesai')
+            ->select('sellers.id', 'sellers.store_name', DB::raw('SUM(order_items.qty) as total_porsi'))
+            ->groupBy('sellers.id', 'sellers.store_name')
+            ->orderByDesc('total_porsi')
+            ->limit(5)
+            ->get();
+
+        return view('admin.impact-tracker', compact(
+            'totalFoodSaved',
+            'financialSaved',
+            'carbonSaved',
+            'totalUmkm',
+            'topSellers'
+        ));
+    }
+
     public function viewDocument($id)
     {
         $seller = Seller::findOrFail($id);

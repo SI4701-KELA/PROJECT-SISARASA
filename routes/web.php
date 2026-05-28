@@ -51,8 +51,13 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     // PBI-20: Ticketing Komplain (Admin)
     Route::get('/complaints', [AdminComplaintController::class, 'index'])->name('admin.complaints.index');
     Route::patch('/complaints/{id}', [AdminComplaintController::class, 'update'])->name('admin.complaints.update');
+<<<<<<< Updated upstream
 =======
 >>>>>>> main
+=======
+    // PBI-22: Impact Tracker
+    Route::get('/impact-tracker', [AdminController::class, 'impactTracker'])->name('admin.impact-tracker');
+>>>>>>> Stashed changes
 });
 
 // Seller Routes
@@ -63,6 +68,21 @@ Route::middleware(['auth', 'check.banned', 'role:seller'])->prefix('seller')->gr
     // PBI-20: Komplain Masuk ke Toko
     Route::get('/complaints', [SellerComplaintController::class, 'index'])->name('seller.complaints');
 
+<<<<<<< Updated upstream
+=======
+    // PBI-21: Dasbor Analitik & Rekapitulasi Penjualan
+    Route::get('/analytics', [SellerController::class, 'analytics'])->name('seller.analytics');
+
+    // PBI-17: Daftar Pesanan Seller
+    Route::get('/orders', [SellerOrderController::class, 'index'])->name('seller.orders');
+    // PBI-19: Ulasan Pelanggan untuk Seller
+    Route::get('/reviews', [\App\Http\Controllers\SellerReviewController::class, 'index'])->name('seller.reviews');
+    Route::patch('/orders/{id}/accept', [SellerOrderController::class, 'acceptPayment'])->name('seller.orders.accept');
+    Route::patch('/orders/{id}/reject', [SellerOrderController::class, 'rejectPayment'])->name('seller.orders.reject');
+    Route::patch('/orders/{id}/ready', [SellerOrderController::class, 'markReady'])->name('seller.orders.ready');
+    Route::post('/orders/verify', [SellerOrderController::class, 'verifyOrder'])->name('seller.orders.verify');
+
+>>>>>>> Stashed changes
     // Katalog management restricted to verified sellers
     Route::middleware('verified_seller')->group(function () {
         Route::get('/products', [SellerController::class, 'products'])->name('seller.products');
@@ -101,6 +121,14 @@ Route::middleware(['auth', 'check.banned', 'role:buyer'])->prefix('buyer')->grou
     Route::get('/complaints', [ComplaintController::class, 'index'])->name('buyer.complaints.index');
 =======
 >>>>>>> main
+});
+
+// PBI-30: Live Chat (AJAX Polling)
+Route::middleware(['auth', 'check.banned'])->group(function () {
+    Route::get('/inbox', [\App\Http\Controllers\ChatController::class, 'index'])->name('chat.inbox');
+    Route::get('/chat/{contact}', [\App\Http\Controllers\ChatController::class, 'show'])->name('chat.show');
+    Route::get('/api/chat/{contact}', [\App\Http\Controllers\ChatController::class, 'fetchMessages'])->name('api.chat.fetch');
+    Route::post('/api/chat/{contact}', [\App\Http\Controllers\ChatController::class, 'sendMessage'])->name('api.chat.send');
 });
 
 Route::middleware('auth')->group(function () {

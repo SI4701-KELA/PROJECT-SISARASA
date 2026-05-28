@@ -144,6 +144,12 @@
         {{-- PBI 28 + PBI 20: Tombol Aksi (Conflict Resolved) --}}
         <div class="px-6 pb-6 pt-2">
             <div class="pt-4 border-t border-gray-100 flex justify-end gap-2">
+                {{-- PBI-30: Chat Penjual --}}
+                <a href="{{ route('chat.show', $seller->user_id) }}"
+                   class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#2aab7f] bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors border border-emerald-100 shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                    Chat Penjual
+                </a>
                 {{-- PBI-20: Tombol Ajukan Komplain --}}
                 @php
                     $hasActiveComplaint = \App\Models\Complaint::where('seller_id', $seller->id)
