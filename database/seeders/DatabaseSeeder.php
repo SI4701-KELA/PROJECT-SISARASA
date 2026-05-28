@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
+<<<<<<< Updated upstream
         // 2. Kategori Default
         $categories = [
             'Makanan Berat',
@@ -40,5 +41,20 @@ class DatabaseSeeder extends Seeder
 
         // 3. Dummy Sellers
         $this->call(DummySellerSeeder::class);
+=======
+        User::updateOrCreate([
+            'email' => 'admin123@gmail.com',
+        ], [
+            'name' => 'Admin User',
+            'role' => 'admin',
+            'password' => '1234567#',
+        ]);
+
+        User::updateOrCreate([
+            'email' => 'test@example.com',
+        ], [
+            'name' => 'Test User',
+        ]);
+>>>>>>> Stashed changes
     }
 }

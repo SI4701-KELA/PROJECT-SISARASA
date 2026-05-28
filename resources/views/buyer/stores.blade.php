@@ -1,6 +1,5 @@
 @extends('layouts.buyer')
 
-<<<<<<< Rayhan
 @section('title', 'Daftar Toko')
 
 @section('content')
@@ -17,16 +16,6 @@
     <span class="text-sm font-bold text-gray-700">{{ $sellers->count() }} Toko</span>
   </div>
 </div>
-=======
-
-        {{-- Flash Message --}}
-        @if(session('success'))
-            <div class="mb-6 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-medium flex items-center gap-2">
-                <svg class="w-5 h-5 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                {{ session('success') }}
-            </div>
-        @endif
->>>>>>> main
 
 {{-- Flash Message --}}
 @if(session('success'))
@@ -85,9 +74,15 @@
 
         {{-- Store Info --}}
         <div class="flex-1 min-w-0 pr-8">
-          <h2 class="text-base font-black text-gray-900 mb-1 truncate group-hover:text-[#2aab7f] transition-colors">
+          <h2 class="text-base font-black text-gray-900 mb-0.5 truncate group-hover:text-[#2aab7f] transition-colors">
             {{ $seller->store_name ?? 'Nama Toko Tidak Tersedia' }}
           </h2>
+          @if($seller->reviews_count > 0)
+            <div class="flex items-center gap-1 mb-1.5 text-[10px] font-black text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-lg w-fit">
+              <span>★ {{ number_format($seller->reviews_avg_rating, 1) }}</span>
+              <span class="text-gray-400 font-semibold">({{ $seller->reviews_count }} Ulasan)</span>
+            </div>
+          @endif
           <p class="text-xs text-gray-500 line-clamp-2 flex items-start gap-1">
             <svg class="w-3.5 h-3.5 text-gray-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
             <span>{{ $seller->address ?? 'Alamat tidak tersedia' }}</span>
@@ -107,7 +102,6 @@
         </span>
       </div>
     </div>
-<<<<<<< Rayhan
 
     {{-- Action Button --}}
     <div class="px-5 pb-5">
@@ -123,7 +117,3 @@
 @endif
 
 @endsection
-=======
-@endcomponent
-
->>>>>>> main

@@ -59,12 +59,19 @@
                     <h1 class="text-2xl font-black text-white leading-tight truncate">
                         {{ $seller->store_name ?? 'Nama Toko' }}
                     </h1>
-                    <span class="mt-1 inline-flex items-center gap-1 px-2.5 py-1 bg-white/20 rounded-full text-xs font-bold text-white">
-                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                        </svg>
-                        Terverifikasi
-                    </span>
+                    <div class="flex flex-wrap items-center gap-2 mt-1.5">
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-white/20 rounded-full text-xs font-bold text-white">
+                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            Terverifikasi
+                        </span>
+                        @if($seller->reviews_count > 0)
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-white/20 rounded-full text-xs font-bold text-white">
+                                ★ {{ number_format($seller->reviews_avg_rating, 1) }} ({{ $seller->reviews_count }} Ulasan)
+                            </span>
+                        @endif
+                    </div>
                 </div>
             </div>
         </div>
@@ -139,8 +146,6 @@
             @endif
 
         </div>
-<<<<<<< Rayhan
-
         {{-- PBI 28 + PBI 20: Tombol Aksi (Conflict Resolved) --}}
         <div class="px-6 pb-6 pt-2">
             <div class="pt-4 border-t border-gray-100 flex justify-end gap-2">
@@ -171,11 +176,6 @@
                 @endif
                 
                 {{-- PBI-28: Laporkan Toko Button --}}
-=======
-        {{-- PBI 28: Laporkan Toko Button --}}
-        <div class="px-6 pb-6 pt-2">
-            <div class="pt-4 border-t border-gray-100 flex justify-end">
->>>>>>> main
                 <button @click="reportModalOpen = true" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors border border-red-100 shadow-sm">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"/>
@@ -260,11 +260,86 @@
                         </div>
                     </div>
 
-                    {{-- Stock Badge --}}
+                    {{-- PBI 14: Input Porsi (Stepper) --}}
+                    @php
+                        $isSurplus = $activeDiscount ? true : false;
+                        $currentStock = $isSurplus ? ($product->stock->qty_surplus ?? 0) : ($product->stock->qty_reg ?? 0);
+                        $stockLabel = $isSurplus ? 'Stok Sisa' : 'Stok Reguler';
+                    @endphp
+                    
                     @if($product->stock ?? false)
-                        <span class="shrink-0 text-xs font-semibold text-gray-400 bg-gray-50 border border-gray-100 px-2 py-1 rounded-lg">
-                            Stok: {{ $product->stock->quantity ?? 0 }}
-                        </span>
+                        <div x-data="{ 
+                                qty: 0, 
+                                maxQty: {{ $currentStock }},
+                                loading: false,
+                                async addToCart() {
+                                    if(this.qty > 0 && !this.loading) {
+                                        this.loading = true;
+                                        try {
+                                            const res = await fetch('{{ route('buyer.cart.store') }}', {
+                                                method: 'POST',
+                                                headers: {
+                                                    'Content-Type': 'application/json',
+                                                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                                    'Accept': 'application/json'
+                                                },
+                                                body: JSON.stringify({
+                                                    product_id: {{ $product->id }},
+                                                    qty: this.qty,
+                                                    is_surplus: {{ $isSurplus ? 'true' : 'false' }}
+                                                })
+                                            });
+                                            const data = await res.json();
+                                            if (res.ok && data.success) {
+                                                showCartToast(data.message || 'Berhasil menambahkan ke keranjang!');
+                                                // Update cart badge count in header
+                                                const badge = document.querySelector('.cart-badge-count');
+                                                if (badge) badge.textContent = data.cart_count;
+                                                this.maxQty = Math.max(0, this.maxQty - this.qty);
+                                                this.qty = 0;
+                                            } else {
+                                                showCartToast(data.error || 'Gagal menambahkan ke keranjang.', true);
+                                            }
+                                        } catch (e) {
+                                            showCartToast('Terjadi kesalahan jaringan.', true);
+                                        } finally {
+                                            this.loading = false;
+                                        }
+                                    }
+                                }
+                             }" class="flex flex-col items-end gap-2">
+                            <span class="text-xs font-bold text-gray-500">
+                                {{ $stockLabel }}: <span x-text="maxQty"></span>
+                            </span>
+                            @if($currentStock > 0)
+                            <div class="flex items-center gap-2">
+                                <div class="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm">
+                                    <button @click="if(qty > 0) qty--" type="button" class="w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:text-[#2aab7f] transition-colors focus:outline-none focus:bg-gray-100" :class="{ 'opacity-50 cursor-not-allowed': qty == 0 }">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20 12H4"/></svg>
+                                    </button>
+                                    <div class="w-10 h-8 flex items-center justify-center border-x border-gray-200 bg-gray-50">
+                                        <span x-text="qty" class="text-sm font-bold text-gray-800"></span>
+                                    </div>
+                                    <button @click="if(qty < maxQty) qty++" type="button" class="w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:text-[#2aab7f] transition-colors focus:outline-none focus:bg-gray-100" :class="{ 'opacity-50 cursor-not-allowed': qty >= maxQty }">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                                    </button>
+                                </div>
+                                <button @click="addToCart()" x-show="qty > 0" x-transition type="button" 
+                                        class="h-8 px-3 flex items-center gap-1.5 bg-[#2aab7f] text-white text-xs font-bold rounded-lg hover:bg-[#239970] transition-colors shadow-sm disabled:opacity-50"
+                                        :disabled="loading">
+                                    <template x-if="!loading">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                                    </template>
+                                    <template x-if="loading">
+                                        <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                                    </template>
+                                    <span x-text="loading ? 'Menambahkan...' : 'Keranjang'"></span>
+                                </button>
+                            </div>
+                            @else
+                            <span class="text-xs font-bold text-red-500 bg-red-50 px-2 py-1 rounded-lg">Habis</span>
+                            @endif
+                        </div>
                     @endif
 
                 </div>
@@ -272,6 +347,60 @@
             </div>
         @endif
     </div>
+
+    {{-- Ulasan Pelanggan Section --}}
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mt-6">
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div>
+                <h2 class="text-base font-bold text-gray-900">Ulasan Pelanggan</h2>
+                <p class="text-xs text-gray-400 mt-0.5">Apa kata mereka yang sudah membeli di toko ini</p>
+            </div>
+            @if($seller->reviews_count > 0)
+                <span class="px-3 py-1 bg-amber-50 text-amber-700 text-xs font-bold rounded-full border border-amber-100">
+                    ★ {{ number_format($seller->reviews_avg_rating, 1) }} / 5.0
+                </span>
+            @endif
+        </div>
+        
+        @if($seller->reviews->isEmpty())
+            <div class="py-12 text-center">
+                <div class="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3 text-gray-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+                </div>
+                <p class="text-sm text-gray-400 font-medium">Belum ada ulasan untuk toko ini.</p>
+            </div>
+        @else
+            <div class="divide-y divide-gray-50">
+                @foreach($seller->reviews as $review)
+                    <div class="p-6 hover:bg-gray-50/50 transition-colors">
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-8 h-8 rounded-full bg-teal-50 flex items-center justify-center text-teal-600 font-bold text-xs">
+                                    {{ strtoupper(substr($review->buyer->name ?? 'P', 0, 1)) }}
+                                </div>
+                                <div>
+                                    <h4 class="text-xs font-bold text-gray-800">{{ $review->buyer->name ?? 'Pembeli' }}</h4>
+                                    <div class="flex items-center gap-0.5 mt-0.5">
+                                        @for($i = 1; $i <= 5; $i++)
+                                            <svg class="w-3 h-3 {{ $i <= $review->rating ? 'text-amber-400 fill-current' : 'text-gray-200' }}" viewBox="0 0 20 20" fill="currentColor">
+                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.518 4.674c.3.922-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                            </svg>
+                                        @endfor
+                                        <span class="text-[10px] text-gray-400 font-semibold ml-1.5">{{ $review->created_at->diffForHumans() }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        @if($review->comment)
+                            <p class="text-xs text-gray-600 bg-gray-50 border border-gray-100/50 rounded-xl p-3.5 mt-3 italic leading-relaxed">
+                                "{{ $review->comment }}"
+                            </p>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        @endif
 
     {{-- PBI 28: Modal Pelaporan Toko --}}
     <div x-show="reportModalOpen" style="display: none;" class="fixed inset-0 z-[100] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">

@@ -20,6 +20,7 @@ class Seller extends Model
         'document_path',
         'verified_at',
         'store_photo',
+        'qris_image',
         'open_time',
         'discount_time',
         'close_time',
@@ -63,5 +64,13 @@ class Seller extends Model
     public function complaints()
     {
         return $this->hasMany(Complaint::class);
+    }
+
+    /**
+     * Relasi ke seluruh ulasan pelanggan toko ini.
+     */
+    public function reviews()
+    {
+        return $this->hasMany(Review::class);
     }
 }
