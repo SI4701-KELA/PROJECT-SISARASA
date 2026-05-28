@@ -74,8 +74,8 @@ class OrderPickupEstimationTest extends TestCase
         $response = $this->actingAs($buyer)->get(route('buyer.checkout.success', $order->id));
 
         $response->assertStatus(200);
-        $response->assertSee('Harap ambil pesanan Anda sebelum pukul');
-        $response->assertSee($deadline->format('H:i') . ' WIB');
+        $response->assertSee('Harap ambil pesanan Anda dalam waktu:');
+        $response->assertSee('(Batas Maksimal: ' . $deadline->timezone('Asia/Jakarta')->format('H:i') . ' WIB)');
     }
 
     public function test_deadline_calculation_with_default_duration()

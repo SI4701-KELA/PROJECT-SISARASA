@@ -3,15 +3,95 @@
 @section('title', 'Daftar Pesanan')
 
 @section('content')
-<div class="max-w-6xl" x-data="{ showProofModal: false, proofImage: '', showRejectModal: false, rejectOrderId: null }">
+<div class="max-w-6xl" x-data="{ 
+    showProofModal: false, 
+    proofImage: '', 
+    showRejectModal: false, 
+    rejectOrderId: null,
+    openVerifyModal: false,
+    verifyTab: 'camera',
+    manualCode: '',
+    verifyError: '',
+    verifySuccess: '',
+    isVerifying: false,
+    isScanning: false,
+    toggleScan() {
+        if (this.isScanning) {
+            stopQrScanner();
+            this.isScanning = false;
+        } else {
+            this.verifyError = '';
+            this.verifySuccess = '';
+            this.isScanning = true;
+            startQrScanner((code) => {
+                this.isScanning = false;
+                this.verifyCode(code);
+            }, (err) => {
+                this.verifyError = err;
+                this.isScanning = false;
+            });
+        }
+    },
+    verifyCode(code) {
+        if (!code || this.isVerifying) return;
+        this.isVerifying = true;
+        this.verifyError = '';
+        this.verifySuccess = '';
+        
+        fetch('{{ route('seller.orders.verify') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ pickup_code: code })
+        })
+        .then(response => response.json().then(data => ({ status: response.status, data })))
+        .then(({ status, data }) => {
+            this.isVerifying = false;
+            if (status === 200 && data.success) {
+                this.verifySuccess = data.message;
+                showSellerToast(data.message);
+                stopQrScanner();
+                this.isScanning = false;
+                
+                setTimeout(() => {
+                    window.location.href = '{{ route('seller.orders', ['tab' => 'selesai']) }}';
+                }, 1200);
+            } else {
+                this.verifyError = data.message || 'Kode tidak valid!';
+            }
+        })
+        .catch(err => {
+            this.isVerifying = false;
+            this.verifyError = 'Terjadi kesalahan koneksi jaringan.';
+        });
+    },
+    closeVerifyModal() {
+        stopQrScanner();
+        this.isScanning = false;
+        this.openVerifyModal = false;
+        this.verifyError = '';
+        this.verifySuccess = '';
+        this.manualCode = '';
+    }
+}">
     {{-- Page Header --}}
-    <div class="flex items-center gap-4 mb-6">
-        <div class="w-10 h-10 rounded-2xl bg-red-50 flex items-center justify-center text-terracotta shrink-0">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div class="flex items-center gap-4">
+            <div class="w-10 h-10 rounded-2xl bg-red-50 flex items-center justify-center text-terracotta shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+            </div>
+            <div>
+                <h1 class="text-2xl font-black text-gray-900 tracking-tight">Daftar Pesanan</h1>
+                <p class="text-xs text-gray-500 font-medium mt-0.5">Kelola pesanan masuk ke toko {{ $seller->store_name }}.</p>
+            </div>
         </div>
         <div>
-            <h1 class="text-2xl font-black text-gray-900 tracking-tight">Daftar Pesanan</h1>
-            <p class="text-xs text-gray-500 font-medium mt-0.5">Kelola pesanan masuk ke toko {{ $seller->store_name }}.</p>
+            <button type="button" @click="openVerifyModal = true" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 bg-[#c04b36] hover:bg-[#a33d2b] text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all text-sm btn-verifikasi-pengambilan">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v1m-3.3 3.3l.7.7m5.2-.7l-.7.7M12 12a4 4 0 11-4-4 4 4 0 014 0zm0 0v5h3"/></svg>
+                Verifikasi Pengambilan
+            </button>
         </div>
     </div>
 
@@ -247,5 +327,159 @@
             </form>
         </div>
     </div>
+
+    {{-- Modal: Verifikasi Pengambilan (Camera Scanner & Manual Input) --}}
+    <div x-show="openVerifyModal" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" @click.self="closeVerifyModal()" style="display: none;" id="verify-modal">
+        <div class="bg-white rounded-[24px] shadow-2xl max-w-md w-full p-6" @click.stop>
+            <div class="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center text-terracotta">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m-3.3 3.3l.7.7m5.2-.7l-.7.7M12 12a4 4 0 11-4-4 4 4 0 014 0zm0 0v5h3"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900">Verifikasi Pengambilan</h3>
+                        <p class="text-xs text-gray-500 font-medium">Scan QR Code / Masukkan Kode Unik</p>
+                    </div>
+                </div>
+                <button @click="closeVerifyModal()" class="w-8 h-8 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            {{-- Tab Switcher --}}
+            <div class="flex gap-2 mb-4 bg-gray-50 p-1 rounded-xl">
+                <button type="button" @click="verifyTab = 'camera'; stopQrScanner(); isScanning = false; verifyError = '';" 
+                        class="flex-1 py-2 text-xs font-bold rounded-lg transition-all"
+                        :class="verifyTab === 'camera' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'">
+                    Scan Kamera
+                </button>
+                <button type="button" @click="verifyTab = 'manual'; stopQrScanner(); isScanning = false; verifyError = '';" 
+                        class="flex-1 py-2 text-xs font-bold rounded-lg transition-all"
+                        :class="verifyTab === 'manual' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'">
+                    Input Manual
+                </button>
+            </div>
+
+            {{-- Alerts --}}
+            <div x-show="verifyError" style="display: none" class="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-2">
+                <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                <span x-text="verifyError"></span>
+            </div>
+            <div x-show="verifySuccess" style="display: none" class="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-2">
+                <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                <span x-text="verifySuccess"></span>
+            </div>
+
+            {{-- Tab Content: Scanner --}}
+            <div x-show="verifyTab === 'camera'">
+                <div class="relative w-full bg-slate-50 border border-gray-100 rounded-2xl overflow-hidden shadow-inner flex flex-col items-center justify-center p-4 mb-4" style="min-height: 250px;">
+                    <div id="qr-reader" class="w-full h-full rounded-xl overflow-hidden"></div>
+                    <div x-show="!isScanning" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-50/90 gap-3 p-6 text-center">
+                        <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        <p class="text-xs text-gray-500 font-semibold">Gunakan kamera untuk memindai QR Code Pembeli</p>
+                    </div>
+                </div>
+
+                <button type="button" @click="toggleScan()"
+                        class="w-full py-3 rounded-xl font-bold text-sm text-white transition-all shadow-md flex items-center justify-center gap-2"
+                        :class="isScanning ? 'bg-red-500 hover:bg-red-600' : 'bg-[#c04b36] hover:bg-[#a33d2b]'">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <span x-text="isScanning ? 'Hentikan Kamera' : 'Aktifkan Kamera Scan'"></span>
+                </button>
+            </div>
+
+            {{-- Tab Content: Manual --}}
+            <div x-show="verifyTab === 'manual'">
+                <div class="mb-4">
+                    <label for="pickup_code_input" class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">Kode Unik Pengambilan <span class="text-red-500">*</span></label>
+                    <input type="text" id="pickup_code_input" x-model="manualCode" placeholder="Contoh: 8XF9Q atau SISA-8XF9Q"
+                           @keyup.enter="verifyCode(manualCode)"
+                           class="w-full bg-gray-50 border border-gray-200 focus:bg-white focus:border-[#c04b36] focus:ring-1 focus:ring-[#c04b36] rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 font-semibold transition-all">
+                </div>
+
+                <button type="button" @click="verifyCode(manualCode)" :disabled="isVerifying || !manualCode"
+                        class="w-full py-3 bg-[#c04b36] hover:bg-[#a33d2b] disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold rounded-xl transition-all shadow-md flex items-center justify-center gap-2 text-sm">
+                    <span x-show="isVerifying" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    <svg x-show="!isVerifying" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4"/></svg>
+                    Verifikasi Kode
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection
+
+@push('scripts')
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+    let html5QrcodeScanner = null;
+
+    window.startQrScanner = function(onSuccessCallback, onErrorCallback) {
+        if (html5QrcodeScanner) {
+            html5QrcodeScanner.clear().catch(err => console.log(err));
+        }
+        
+        html5QrcodeScanner = new Html5Qrcode("qr-reader");
+        html5QrcodeScanner.start(
+            { facingMode: "environment" },
+            {
+                fps: 10,
+                qrbox: { width: 220, height: 220 }
+            },
+            (decodedText, decodedResult) => {
+                onSuccessCallback(decodedText);
+            },
+            (errorMessage) => {
+                // Ignore polling errors
+            }
+        ).catch(err => {
+            onErrorCallback("Kamera gagal diakses. Pastikan izin kamera telah diberikan.");
+        });
+    }
+
+    window.stopQrScanner = function() {
+        if (html5QrcodeScanner && html5QrcodeScanner.isScanning) {
+            html5QrcodeScanner.stop().then(() => {
+                html5QrcodeScanner.clear().catch(err => console.log(err));
+            }).catch(err => console.log("Scanner stop error:", err));
+        }
+    }
+
+    window.showSellerToast = function(message, isError = false) {
+        let container = document.getElementById('seller-toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'seller-toast-container';
+            container.style.cssText = 'position:fixed;bottom:32px;right:32px;z-index:9999;display:flex;flex-direction:column-reverse;gap:8px;';
+            document.body.appendChild(container);
+        }
+
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            display:flex;align-items:center;gap:10px;padding:14px 20px;border-radius:16px;
+            font-size:14px;font-weight:600;color:white;min-width:280px;max-width:400px;
+            box-shadow:0 8px 32px rgba(0,0,0,0.18);backdrop-filter:blur(12px);
+            transform:translateX(120%);transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);
+            background:${isError ? 'linear-gradient(135deg,rgb(239,68,68),rgb(220,38,38))' : 'linear-gradient(135deg,rgb(42,171,127),rgb(15,138,92))'};
+        `;
+        
+        const icon = isError 
+            ? '<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01M12 3a9 9 0 100 18 9 9 0 000-18z"/></svg>'
+            : '<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+        
+        toast.innerHTML = icon + '<span>' + message + '</span>';
+        container.appendChild(toast);
+
+        requestAnimationFrame(() => {
+            toast.style.transform = 'translateX(0)';
+        });
+
+        setTimeout(() => {
+            toast.style.transform = 'translateX(120%)';
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 400);
+        }, 3000);
+    }
+</script>
+@endpush

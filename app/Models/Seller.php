@@ -65,4 +65,12 @@ class Seller extends Model
     {
         return $this->hasMany(Complaint::class);
     }
+
+    /**
+     * Relasi ke seluruh ulasan pelanggan toko ini.
+     */
+    public function reviews()
+    {
+        return $this->hasMany(Review::class);
+    }
 }

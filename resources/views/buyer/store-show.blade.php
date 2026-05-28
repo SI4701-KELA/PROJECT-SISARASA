@@ -59,12 +59,19 @@
                     <h1 class="text-2xl font-black text-white leading-tight truncate">
                         {{ $seller->store_name ?? 'Nama Toko' }}
                     </h1>
-                    <span class="mt-1 inline-flex items-center gap-1 px-2.5 py-1 bg-white/20 rounded-full text-xs font-bold text-white">
-                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                        </svg>
-                        Terverifikasi
-                    </span>
+                    <div class="flex flex-wrap items-center gap-2 mt-1.5">
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-white/20 rounded-full text-xs font-bold text-white">
+                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            Terverifikasi
+                        </span>
+                        @if($seller->reviews_count > 0)
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-white/20 rounded-full text-xs font-bold text-white">
+                                ★ {{ number_format($seller->reviews_avg_rating, 1) }} ({{ $seller->reviews_count }} Ulasan)
+                            </span>
+                        @endif
+                    </div>
                 </div>
             </div>
         </div>
@@ -334,6 +341,60 @@
             </div>
         @endif
     </div>
+
+    {{-- Ulasan Pelanggan Section --}}
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mt-6">
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div>
+                <h2 class="text-base font-bold text-gray-900">Ulasan Pelanggan</h2>
+                <p class="text-xs text-gray-400 mt-0.5">Apa kata mereka yang sudah membeli di toko ini</p>
+            </div>
+            @if($seller->reviews_count > 0)
+                <span class="px-3 py-1 bg-amber-50 text-amber-700 text-xs font-bold rounded-full border border-amber-100">
+                    ★ {{ number_format($seller->reviews_avg_rating, 1) }} / 5.0
+                </span>
+            @endif
+        </div>
+        
+        @if($seller->reviews->isEmpty())
+            <div class="py-12 text-center">
+                <div class="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3 text-gray-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+                </div>
+                <p class="text-sm text-gray-400 font-medium">Belum ada ulasan untuk toko ini.</p>
+            </div>
+        @else
+            <div class="divide-y divide-gray-50">
+                @foreach($seller->reviews as $review)
+                    <div class="p-6 hover:bg-gray-50/50 transition-colors">
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-8 h-8 rounded-full bg-teal-50 flex items-center justify-center text-teal-600 font-bold text-xs">
+                                    {{ strtoupper(substr($review->buyer->name ?? 'P', 0, 1)) }}
+                                </div>
+                                <div>
+                                    <h4 class="text-xs font-bold text-gray-800">{{ $review->buyer->name ?? 'Pembeli' }}</h4>
+                                    <div class="flex items-center gap-0.5 mt-0.5">
+                                        @for($i = 1; $i <= 5; $i++)
+                                            <svg class="w-3 h-3 {{ $i <= $review->rating ? 'text-amber-400 fill-current' : 'text-gray-200' }}" viewBox="0 0 20 20" fill="currentColor">
+                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.518 4.674c.3.922-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                            </svg>
+                                        @endfor
+                                        <span class="text-[10px] text-gray-400 font-semibold ml-1.5">{{ $review->created_at->diffForHumans() }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        @if($review->comment)
+                            <p class="text-xs text-gray-600 bg-gray-50 border border-gray-100/50 rounded-xl p-3.5 mt-3 italic leading-relaxed">
+                                "{{ $review->comment }}"
+                            </p>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        @endif
 
     {{-- PBI 28: Modal Pelaporan Toko --}}
     <div x-show="reportModalOpen" style="display: none;" class="fixed inset-0 z-[100] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">

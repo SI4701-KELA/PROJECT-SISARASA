@@ -127,4 +127,46 @@ class SellerOrderController extends Controller
         return redirect()->route('seller.orders', ['tab' => 'siap'])
             ->with('success', 'Pesanan #' . $order->id . ' siap diambil oleh pembeli.');
     }
+
+    /**
+     * Verifikasi pengambilan makanan menggunakan kode unik / QR Code.
+     */
+    public function verifyOrder(Request $request)
+    {
+        $request->validate([
+            'pickup_code' => 'required|string',
+        ]);
+
+        $seller = Seller::where('user_id', $request->user()->id)->firstOrFail();
+        $pickupCode = strtoupper(trim($request->input('pickup_code')));
+
+        // Jika penjual memasukkan 5 digit akhir saja, tambahkan prefix "SISA-"
+        if (strlen($pickupCode) === 5) {
+            $pickupCode = 'SISA-' . $pickupCode;
+        }
+
+        // Cari pesanan dengan pickup_code dan seller_id yang cocok, serta berstatus siap_diambil
+        $order = Order::where('seller_id', $seller->id)
+            ->where('pickup_code', $pickupCode)
+            ->where('status', 'siap_diambil')
+            ->first();
+
+        if (!$order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kode tidak valid!'
+            ], 422);
+        }
+
+        $order->update([
+            'status' => 'selesai'
+        ]);
+
+        session()->flash('success', 'Pesanan Berhasil Diserahkan. Pesanan #' . $order->id . ' telah selesai.');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pesanan Berhasil Diserahkan'
+        ]);
+    }
 }

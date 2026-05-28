@@ -63,9 +63,12 @@ Route::middleware(['auth', 'check.banned', 'role:seller'])->prefix('seller')->gr
 
     // PBI-17: Daftar Pesanan Seller
     Route::get('/orders', [SellerOrderController::class, 'index'])->name('seller.orders');
+    // PBI-19: Ulasan Pelanggan untuk Seller
+    Route::get('/reviews', [\App\Http\Controllers\SellerReviewController::class, 'index'])->name('seller.reviews');
     Route::patch('/orders/{id}/accept', [SellerOrderController::class, 'acceptPayment'])->name('seller.orders.accept');
     Route::patch('/orders/{id}/reject', [SellerOrderController::class, 'rejectPayment'])->name('seller.orders.reject');
     Route::patch('/orders/{id}/ready', [SellerOrderController::class, 'markReady'])->name('seller.orders.ready');
+    Route::post('/orders/verify', [SellerOrderController::class, 'verifyOrder'])->name('seller.orders.verify');
 
     // Katalog management restricted to verified sellers
     Route::middleware('verified_seller')->group(function () {
@@ -104,6 +107,9 @@ Route::middleware(['auth', 'check.banned', 'role:buyer'])->prefix('buyer')->grou
 
     // Riwayat Pesanan Pembeli
     Route::get('/orders', [BuyerOrderController::class, 'index'])->name('buyer.orders.index');
+    Route::get('/orders/{id}', [BuyerOrderController::class, 'show'])->name('buyer.orders.show');
+    // PBI-19: Simpan Ulasan Pembeli
+    Route::post('/reviews', [\App\Http\Controllers\ReviewController::class, 'store'])->name('buyer.reviews.store');
 
     // Fitur PBI-3: Manajemen Favorit & Toko Tersimpan
     Route::post('/favorite/toggle', [FavoriteController::class, 'toggle'])->name('buyer.favorite.toggle');
