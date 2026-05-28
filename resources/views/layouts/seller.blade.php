@@ -66,8 +66,26 @@
       @endif
     </a>
     {{-- Dashboard Analitik --}}
-    <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 font-medium text-sm hover:text-gray-600 hover:bg-gray-50">
+    <a href="{{ route('seller.analytics') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm relative {{ request()->routeIs('seller.analytics') ? 'tr font-semibold bg-red-50/40' : 'text-gray-400 font-medium hover:text-gray-600 hover:bg-gray-50' }}">
       <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>Dashboard Analitik
+      @if(request()->routeIs('seller.analytics'))
+        <div class="sidebar-bar"></div>
+      @endif
+    </a>
+    {{-- Inbox Chat --}}
+    @php
+      $unreadSellerChatCount = \App\Models\Message::where('receiver_id', auth()->id())
+        ->where('is_read', false)->count();
+    @endphp
+    <a href="{{ route('chat.inbox') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm relative {{ request()->routeIs('chat.*') ? 'tr font-semibold bg-red-50/40' : 'text-gray-400 font-medium hover:text-gray-600 hover:bg-gray-50' }}">
+      <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+      Inbox Chat
+      @if($unreadSellerChatCount > 0)
+        <span class="ml-auto bg-red-500 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full animate-pulse">{{ $unreadSellerChatCount > 9 ? '9+' : $unreadSellerChatCount }}</span>
+      @endif
+      @if(request()->routeIs('chat.*'))
+        <div class="sidebar-bar"></div>
+      @endif
     </a>
     {{-- Komplain Masuk --}}
     @php

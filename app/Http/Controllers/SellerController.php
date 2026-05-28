@@ -4,10 +4,85 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Seller;
+use App\Models\Order;
+use App\Models\OrderItem;
 use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon;
 
 class SellerController extends Controller
 {
+    /**
+     * Dasbor Analitik & Rekapitulasi Penjualan (Seller).
+     * Agregasi data pendapatan dan porsi dari orders + order_items yang berstatus 'Selesai'.
+     */
+    public function analytics(Request $request)
+    {
+        $seller = Seller::where('user_id', $request->user()->id)->first();
+
+        if (!$seller) {
+            return redirect()->route('seller.profile')
+                ->with('error', 'Silakan lengkapi profil toko terlebih dahulu.');
+        }
+
+        // --- Filter Waktu ---
+        $filter = $request->query('filter', 'all');
+        $dateRange = null;
+
+        switch ($filter) {
+            case 'today':
+                $dateRange = [Carbon::today(), Carbon::now()];
+                break;
+            case 'week':
+                $dateRange = [Carbon::now()->startOfWeek(), Carbon::now()];
+                break;
+            case 'month':
+                $dateRange = [Carbon::now()->startOfMonth(), Carbon::now()];
+                break;
+            default:
+                $filter = 'all';
+                break;
+        }
+
+        // --- Query Pendapatan (tabel orders) ---
+        $orderQuery = Order::where('seller_id', $seller->id)
+            ->where('status', 'Selesai');
+
+        if ($dateRange) {
+            $orderQuery->whereBetween('created_at', $dateRange);
+        }
+
+        $totalPendapatan = (int) $orderQuery->sum('total_amount');
+        $totalTransaksi  = (int) $orderQuery->count();
+
+        // --- Query Rincian Porsi (tabel order_items via relasi) ---
+        $orderItemBaseQuery = function ($query) use ($seller, $dateRange) {
+            $query->where('seller_id', $seller->id)
+                  ->where('status', 'Selesai');
+            if ($dateRange) {
+                $query->whereBetween('created_at', $dateRange);
+            }
+        };
+
+        $porsiReguler = (int) OrderItem::whereHas('order', $orderItemBaseQuery)
+            ->where('is_surplus', false)
+            ->sum('qty');
+
+        $porsiSurplus = (int) OrderItem::whereHas('order', $orderItemBaseQuery)
+            ->where('is_surplus', true)
+            ->sum('qty');
+
+        $totalPorsi = $porsiReguler + $porsiSurplus;
+
+        return view('seller.analytics', compact(
+            'totalPendapatan',
+            'totalTransaksi',
+            'porsiReguler',
+            'porsiSurplus',
+            'totalPorsi',
+            'filter'
+        ));
+    }
+
     public function profile(Request $request)
     {
         $seller = Seller::where('user_id', $request->user()->id)->first();
