@@ -79,6 +79,7 @@ Route::middleware(['auth', 'check.banned', 'role:seller'])->prefix('seller')->gr
     Route::get('/reviews', [\App\Http\Controllers\SellerReviewController::class, 'index'])->name('seller.reviews');
     Route::patch('/orders/{id}/accept', [SellerOrderController::class, 'acceptPayment'])->name('seller.orders.accept');
     Route::patch('/orders/{id}/reject', [SellerOrderController::class, 'rejectPayment'])->name('seller.orders.reject');
+    Route::patch('/orders/{id}/cancel', [SellerOrderController::class, 'cancel'])->name('seller.orders.cancel');
     Route::patch('/orders/{id}/ready', [SellerOrderController::class, 'markReady'])->name('seller.orders.ready');
     Route::post('/orders/verify', [SellerOrderController::class, 'verifyOrder'])->name('seller.orders.verify');
 
@@ -120,6 +121,8 @@ Route::middleware(['auth', 'check.banned', 'role:buyer'])->prefix('buyer')->grou
     // Riwayat Pesanan Pembeli
     Route::get('/orders', [BuyerOrderController::class, 'index'])->name('buyer.orders.index');
     Route::get('/orders/{id}', [BuyerOrderController::class, 'show'])->name('buyer.orders.show');
+    Route::patch('/orders/{id}/cancel', [BuyerOrderController::class, 'cancel'])->name('buyer.orders.cancel');
+
     
     // PBI-19: Simpan Ulasan Pembeli
     Route::post('/reviews', [\App\Http\Controllers\ReviewController::class, 'store'])->name('buyer.reviews.store');

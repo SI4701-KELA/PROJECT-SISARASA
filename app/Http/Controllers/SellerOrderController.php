@@ -169,4 +169,49 @@ class SellerOrderController extends Controller
             'message' => 'Pesanan Berhasil Diserahkan'
         ]);
     }
+    /**
+     * Membatalkan pesanan oleh penjual.
+     */
+    public function cancel(Request $request, $id)
+    {
+        $request->validate([
+            'cancellation_reason' => 'required|string',
+        ], [
+            'cancellation_reason.required' => 'Alasan pembatalan wajib diisi.',
+        ]);
+
+        $seller = Seller::where('user_id', $request->user()->id)->firstOrFail();
+
+        $order = Order::where('id', $id)
+            ->where('seller_id', $seller->id)
+            ->with('items')
+            ->firstOrFail();
+
+        // Penjual dapat membatalkan pesanan selama status BUKAN "siap_diambil", "selesai", atau "dibatalkan"
+        if (in_array($order->status, ['siap_diambil', 'selesai', 'dibatalkan'])) {
+            return redirect()->back()->with('error', 'Pesanan tidak dapat dibatalkan pada status ini.');
+        }
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($order, $request) {
+            $order->update([
+                'status' => 'dibatalkan',
+                'cancellation_reason' => $request->input('cancellation_reason'),
+            ]);
+
+            // Kembalikan stok
+            foreach ($order->items as $item) {
+                $stock = \App\Models\Stock::where('product_id', $item->product_id)->first();
+                if ($stock) {
+                    if ($item->is_surplus) {
+                        $stock->increment('qty_surplus', $item->qty);
+                    } else {
+                        $stock->increment('qty_reg', $item->qty);
+                    }
+                }
+            }
+        });
+
+        // Redirect ke tab yang sesuai atau back
+        return redirect()->back()->with('success', 'Pesanan #' . $order->id . ' telah dibatalkan.');
+    }
 }

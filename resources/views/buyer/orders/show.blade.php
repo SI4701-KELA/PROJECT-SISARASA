@@ -4,6 +4,8 @@
 
 @push('styles')
 <style>
+    [x-cloak] { display: none !important; }
+
     @media print {
         body * {
             visibility: hidden;
@@ -26,6 +28,13 @@
 
 @section('content')
 <div class="max-w-3xl mx-auto py-4">
+    {{-- Success State Banner --}}
+    @if($order->status === 'dibatalkan')
+    <div class="mb-6 bg-white border border-teal-500 rounded-xl p-4 text-center shadow-sm">
+        <h3 class="text-teal-600 font-bold text-lg">Pesanan Berhasil di batalkan</h3>
+    </div>
+    @endif
+
     {{-- Back Link & Print Action (no-print) --}}
     <div class="flex items-center justify-between mb-8 no-print">
         <a href="{{ route('buyer.orders.index', ['tab' => 'riwayat']) }}" class="inline-flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors">
@@ -172,6 +181,207 @@
             </div>
         </div>
     </div>
+
+    {{-- Buyer Cancellation Timer & Button --}}
+    {{-- LAPIS 1 (Blade Guard): Render HANYA jika status 'menunggu_verifikasi' DAN masih dalam 15 detik --}}
+    @php
+        $diffSeconds      = (int) now()->diffInSeconds($order->created_at);
+        $remainingSeconds = max(15 - $diffSeconds, 0);
+    @endphp
+
+    @if($order->status === 'menunggu_verifikasi' && $remainingSeconds > 0)
+        <div
+            x-data="{
+                timeLeft:    {{ $remainingSeconds }},
+                maxTime:     15,
+                interval:    null,
+                showCancel:  true,
+                showModal:   false,
+                reason:      '',
+                otherReason: '',
+                get pct() { return (this.timeLeft / this.maxTime) * 100; },
+                init() {
+                    this.startTimer();
+                    this.$watch('showModal', v => {
+                        if (v) this.pauseTimer();
+                        else if (this.timeLeft > 0) this.startTimer();
+                    });
+                },
+                startTimer() {
+                    if (this.interval) clearInterval(this.interval);
+                    this.interval = setInterval(() => {
+                        if (this.timeLeft > 0) {
+                            this.timeLeft--;
+                        } else {
+                            this.pauseTimer();
+                            this.showCancel = false;
+                        }
+                    }, 1000);
+                },
+                pauseTimer() { clearInterval(this.interval); }
+            }"
+            x-show="showCancel || showModal"
+            x-cloak
+            class="mt-6 no-print"
+        >
+            {{-- ── Card Timer & Tombol ── --}}
+            <div
+                x-show="!showModal"
+                class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5"
+            >
+                {{-- Label + angka countdown --}}
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-sm font-bold text-gray-500">Sisa Waktu Pembatalan</span>
+                    <span
+                        class="text-sm font-extrabold tabular-nums"
+                        style="color:#c04b36"
+                        x-text="timeLeft + 's'"
+                    ></span>
+                </div>
+
+                {{-- ── Progress Bar ── --}}
+                {{-- Outer (track): warna abu-abu Tailwind --}}
+                <div class="w-full bg-gray-200 rounded-full h-2.5 mb-4 overflow-hidden">
+                    {{-- Inner (fill): warna tema #c04b36 via Tailwind arbitrary, width dari Alpine template literal --}}
+                    <div
+                        class="bg-[#c04b36] h-2.5 rounded-full transition-all duration-1000 ease-linear"
+                        :style="`width: ${(timeLeft / 15) * 100}%`"
+                    ></div>
+                </div>
+
+                {{-- ── Tombol Utama ── --}}
+                <button
+                    @click="showModal = true"
+                    class="w-full py-3 px-4 rounded-xl font-bold text-white text-sm transition-opacity hover:opacity-90 active:opacity-75"
+                    style="background:#c04b36;"
+                >
+                    Batalkan Pesanan
+                </button>
+            </div>
+
+            {{-- ── Modal Alasan Pembatalan ── --}}
+            <template x-teleport="body">
+                <div
+                    x-show="showModal"
+                    x-cloak
+                    class="fixed inset-0 z-[200] flex items-center justify-center p-4"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="cancel-modal-title"
+                >
+                    {{-- Backdrop --}}
+                    <div
+                        class="absolute inset-0 bg-black/60"
+                        x-show="showModal"
+                        x-transition:enter="ease-out duration-200"
+                        x-transition:enter-start="opacity-0"
+                        x-transition:enter-end="opacity-100"
+                        x-transition:leave="ease-in duration-150"
+                        x-transition:leave-start="opacity-100"
+                        x-transition:leave-end="opacity-0"
+                        @click="showModal = false"
+                    ></div>
+
+                    {{-- Panel --}}
+                    <div
+                        class="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-auto flex flex-col"
+                        style="max-height: 90vh;"
+                        x-show="showModal"
+                        x-transition:enter="ease-out duration-200"
+                        x-transition:enter-start="opacity-0 scale-95"
+                        x-transition:enter-end="opacity-100 scale-100"
+                        x-transition:leave="ease-in duration-150"
+                        x-transition:leave-start="opacity-100 scale-100"
+                        x-transition:leave-end="opacity-0 scale-95"
+                        @click.stop
+                    >
+                        {{-- Header --}}
+                        <div class="flex items-center gap-3 px-5 pt-5 pb-4 border-b border-gray-100 shrink-0">
+                            <button
+                                @click="showModal = false"
+                                class="w-7 h-7 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 text-xs font-bold transition-colors"
+                            >✕</button>
+                            <h3 id="cancel-modal-title" class="text-sm font-bold text-gray-900">Pilih Alasan</h3>
+                        </div>
+
+                        <form
+                            action="{{ route('buyer.orders.cancel', $order->id) }}"
+                            method="POST"
+                            class="flex flex-col overflow-hidden"
+                        >
+                            @csrf
+                            @method('PATCH')
+
+                            {{-- Daftar Alasan (scrollable) --}}
+                            <div class="overflow-y-auto px-5 py-4 space-y-3 grow">
+                                @php
+                                    $reasons = [
+                                        'Pembayaran gagal',
+                                        'Posisi Driver terlalu jauh',
+                                        'Saya berubah pikiran',
+                                        'Lupa pakai Voucher',
+                                        'Kesalahan alamat atau nomor telepon',
+                                        'Driver ingin membatalkan',
+                                        'Driver tidak memiliki uang yang cukup',
+                                        'Driver tidak bisa dihubungi',
+                                        'Lainnya',
+                                    ];
+                                @endphp
+
+                                @foreach($reasons as $r)
+                                    <label class="flex items-center gap-3 cursor-pointer group py-1">
+                                        <input
+                                            type="radio"
+                                            x-model="reason"
+                                            name="cancellation_reason_radio"
+                                            value="{{ $r }}"
+                                            class="w-5 h-5 shrink-0 cursor-pointer"
+                                            style="accent-color: #c04b36;"
+                                        >
+                                        <span class="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors leading-snug">
+                                            {{ $r }}
+                                        </span>
+                                    </label>
+                                @endforeach
+
+                                {{-- Textarea Lainnya --}}
+                                <div x-show="reason === 'Lainnya'" x-cloak class="pt-1">
+                                    <textarea
+                                        x-model="otherReason"
+                                        name="cancellation_reason_other"
+                                        rows="3"
+                                        class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2"
+                                        style="focus-ring-color:#c04b36"
+                                        placeholder="Tulis alasan lainnya..."
+                                    ></textarea>
+                                </div>
+                            </div>
+
+                            {{-- Hidden field --}}
+                            <input
+                                type="hidden"
+                                name="cancellation_reason"
+                                :value="reason === 'Lainnya' ? otherReason : reason"
+                            >
+
+                            {{-- ── Tombol Submit (always visible, tidak terpotong) ── --}}
+                            <div class="px-5 pb-5 pt-3 border-t border-gray-100 shrink-0">
+                                <button
+                                    type="submit"
+                                    :disabled="!reason || (reason === 'Lainnya' && !otherReason)"
+                                    class="w-full py-3 px-4 rounded-xl font-bold text-white text-sm transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                                    style="background:#c04b36;"
+                                >
+                                    Batalkan Pesanan
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </template>
+        </div>
+    @endif
+
 
     {{-- Bottom Actions (no-print) --}}
     <div class="flex flex-col sm:flex-row gap-3 mt-8 no-print justify-center">

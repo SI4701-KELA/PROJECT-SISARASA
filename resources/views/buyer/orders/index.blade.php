@@ -178,7 +178,7 @@
                                     <p class="text-xl font-black text-gray-900 mb-4">Rp {{ number_format($order->total_amount, 0, ',', '.') }}</p>
                                 </div>
                                 
-                                <a href="{{ route('buyer.checkout.success', $order->id) }}" 
+                                <a href="{{ route('buyer.orders.show', $order->id) }}" 
                                    class="w-full inline-flex items-center justify-center px-4 py-3 bg-white border-2 border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white font-bold rounded-xl transition-colors text-sm">
                                     Lacak Pesanan
                                 </a>
