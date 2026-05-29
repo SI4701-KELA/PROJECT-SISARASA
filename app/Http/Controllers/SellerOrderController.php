@@ -66,6 +66,7 @@ class SellerOrderController extends Controller
 
     /**
      * Tolak pembayaran → Status: menunggu_verifikasi → dibatalkan.
+     * Stok dikembalikan via DB::transaction.
      */
     public function rejectPayment(Request $request, $id)
     {
@@ -73,7 +74,7 @@ class SellerOrderController extends Controller
             'cancellation_reason' => 'required|string|min:5',
         ], [
             'cancellation_reason.required' => 'Alasan penolakan wajib diisi.',
-            'cancellation_reason.min' => 'Alasan penolakan minimal 5 karakter.',
+            'cancellation_reason.min'      => 'Alasan penolakan minimal 5 karakter.',
         ]);
 
         $seller = Seller::where('user_id', $request->user()->id)->firstOrFail();
@@ -81,15 +82,33 @@ class SellerOrderController extends Controller
         $order = Order::where('id', $id)
             ->where('seller_id', $seller->id)
             ->where('status', 'menunggu_verifikasi')
+            ->with('items')
             ->firstOrFail();
 
-        $order->update([
-            'status' => 'dibatalkan',
-            'cancellation_reason' => $request->input('cancellation_reason'),
-        ]);
+        \Illuminate\Support\Facades\DB::transaction(function () use ($order, $request) {
+            $order->update([
+                'status'              => 'dibatalkan',
+                'cancellation_reason' => $request->input('cancellation_reason'),
+            ]);
+
+            // Kembalikan stok — identik dengan BuyerOrderController::cancel
+            foreach ($order->items as $item) {
+                $stock = \App\Models\Stock::where('product_id', $item->product_id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($stock) {
+                    if ($item->is_surplus) {
+                        $stock->increment('qty_surplus', $item->qty);
+                    } else {
+                        $stock->increment('qty_reg', $item->qty);
+                    }
+                }
+            }
+        });
 
         return redirect()->route('seller.orders', ['tab' => 'baru'])
-            ->with('success', 'Pembayaran ditolak. Pesanan #' . $order->id . ' telah dibatalkan.');
+            ->with('success', 'Pembayaran ditolak. Pesanan #' . $order->id . ' telah dibatalkan dan stok dikembalikan.');
     }
 
     /**
