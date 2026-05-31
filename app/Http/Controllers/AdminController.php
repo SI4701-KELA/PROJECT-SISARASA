@@ -18,38 +18,27 @@ class AdminController extends Controller
     public function impactTracker()
     {
         // Base constraint: hanya order_items surplus dari pesanan Selesai
-        $surplusBaseQuery = function ($q) {
-            $q->where('status', 'Selesai');
-        };
+        // Gunakan 1 JOIN query terpusat untuk semua metrik (menghindari whereHas berulang)
+        $surplusBase = \Illuminate\Support\Facades\DB::table('order_items')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->where('orders.status', 'Selesai')
+            ->where('order_items.is_surplus', true);
 
         // Metrik 1 — Total Food Saved (porsi)
-        $totalFoodSaved = (int) OrderItem::where('is_surplus', true)
-            ->whereHas('order', $surplusBaseQuery)
-            ->sum('qty');
+        $totalFoodSaved = (int) (clone $surplusBase)->sum('order_items.qty');
 
         // Metrik 2 — Nilai Finansial Diselamatkan (Rupiah)
-        // Menggunakan single query dengan DB::raw untuk efisiensi, menghindari ->get() lalu iterasi collection
-        $financialSaved = (int) OrderItem::where('is_surplus', true)
-            ->whereHas('order', $surplusBaseQuery)
-            ->sum(DB::raw('qty * price'));
+        $financialSaved = (int) (clone $surplusBase)->sum(DB::raw('order_items.qty * order_items.price'));
 
         // Metrik 3 — Dampak Lingkungan (Asumsi 1 porsi = 0.5 Kg CO2 dicegah)
         $carbonSaved = round($totalFoodSaved * 0.5, 1);
 
         // Metrik 4 — Total UMKM Kontributor (seller_id unik)
-        $totalUmkm = (int) Order::where('status', 'Selesai')
-            ->whereHas('items', function ($q) {
-                $q->where('is_surplus', true);
-            })
-            ->distinct('seller_id')
-            ->count('seller_id');
+        $totalUmkm = (int) (clone $surplusBase)->distinct()->count('orders.seller_id');
 
-        // Bonus — Top 5 Pahlawan UMKM (seller yang paling banyak menjual porsi surplus Selesai)
-        $topSellers = DB::table('order_items')
-            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+        // Bonus — Top 5 Pahlawan UMKM
+        $topSellers = (clone $surplusBase)
             ->join('sellers', 'orders.seller_id', '=', 'sellers.id')
-            ->where('order_items.is_surplus', true)
-            ->where('orders.status', 'Selesai')
             ->select('sellers.id', 'sellers.store_name', DB::raw('SUM(order_items.qty) as total_porsi'))
             ->groupBy('sellers.id', 'sellers.store_name')
             ->orderByDesc('total_porsi')
@@ -78,13 +67,30 @@ class AdminController extends Controller
 
     public function validations()
     {
-        $sellers = Seller::orderBy('created_at', 'desc')->get();
+        // Pilih kolom spesifik yang dibutuhkan view — hindari SELECT *
+        $sellers = Seller::select([
+                'id', 'user_id', 'store_name', 'address', 'verification_status',
+                'rejection_reason', 'document_path', 'verified_at',
+                'store_photo', 'pending_profile_updates', 'created_at',
+            ])
+            ->with('user:id,name,email,phone')
+            ->orderBy('created_at', 'desc')
+            ->get();
         return view('admin.validations', compact('sellers'));
     }
 
     public function stores()
     {
-        $sellers = Seller::orderBy('created_at', 'desc')->get();
+        // Pilih kolom spesifik yang dibutuhkan view — hindari SELECT *
+        $sellers = Seller::select([
+                'id', 'user_id', 'store_name', 'address', 'verification_status',
+                'rejection_reason', 'document_path', 'verified_at', 'store_photo',
+                'open_time', 'close_time', 'latitude', 'longitude',
+                'pending_profile_updates', 'created_at',
+            ])
+            ->with('user:id,name,email,is_banned')
+            ->orderBy('created_at', 'desc')
+            ->get();
         return view('admin.stores', compact('sellers'));
     }
 

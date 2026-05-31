@@ -2,7 +2,10 @@
 
 namespace App\Providers;
 
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use App\View\Composers\BuyerSidebarComposer;
+use App\View\Composers\SellerSidebarComposer;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +22,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Composer: inject sidebar data ke buyer layout tanpa inline DB query
+        View::composer('layouts.buyer', BuyerSidebarComposer::class);
+
+        // Composer: inject sidebar data ke seller layout tanpa inline DB query
+        View::composer('layouts.seller', SellerSidebarComposer::class);
     }
 }

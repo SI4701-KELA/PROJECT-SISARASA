@@ -17,46 +17,69 @@ class ChatController extends Controller
     {
         $userId = auth()->id();
 
-        // Ambil semua user yang pernah berkirim pesan dengan auth user,
-        // urutkan berdasarkan pesan terakhir (terbaru di atas).
-        $contacts = DB::table('messages')
-            ->select(DB::raw("
+        // Ambil daftar contact_id + last message time dalam 1 query
+        $contactIds = DB::table('messages')
+            ->selectRaw("
                 CASE
                     WHEN sender_id = {$userId} THEN receiver_id
                     ELSE sender_id
-                END as contact_id
-            "))
+                END as contact_id,
+                MAX(created_at) as last_at
+            ")
             ->where('sender_id', $userId)
             ->orWhere('receiver_id', $userId)
             ->groupBy('contact_id')
-            ->orderByDesc(DB::raw('MAX(created_at)'))
+            ->orderByDesc('last_at')
             ->pluck('contact_id');
 
-        // Eager load contact users + pesan terakhir + unread count
-        $contactList = $contacts->map(function ($contactId) use ($userId) {
-            $contact = User::find($contactId);
+        if ($contactIds->isEmpty()) {
+            $layout = auth()->user()->role === 'seller' ? 'layouts.seller' : 'layouts.buyer';
+            return view('chat.index', ['contactList' => collect(), 'layout' => $layout]);
+        }
+
+        // Eager load semua users sekaligus (1 query, bukan N query)
+        $users = User::whereIn('id', $contactIds)->get()->keyBy('id');
+
+        // Ambil lastMessage per kontak dalam 1 query (self-join / subquery)
+        $lastMessages = DB::table('messages as m1')
+            ->whereNotExists(function ($q) {
+                $q->from('messages as m2')
+                    ->whereRaw('m2.created_at > m1.created_at')
+                    ->whereRaw('(
+                        (m2.sender_id = m1.sender_id AND m2.receiver_id = m1.receiver_id) OR
+                        (m2.sender_id = m1.receiver_id AND m2.receiver_id = m1.sender_id)
+                    )');
+            })
+            ->where(function ($q) use ($userId) {
+                $q->where('m1.sender_id', $userId)
+                  ->orWhere('m1.receiver_id', $userId);
+            })
+            ->select('m1.*')
+            ->get()
+            ->groupBy(function ($msg) use ($userId) {
+                return $msg->sender_id === $userId ? $msg->receiver_id : $msg->sender_id;
+            })
+            ->map(fn($group) => $group->first());
+
+        // Ambil unread counts per kontak dalam 1 query (GROUP BY)
+        $unreadCounts = DB::table('messages')
+            ->selectRaw('sender_id, COUNT(*) as cnt')
+            ->where('receiver_id', $userId)
+            ->where('is_read', false)
+            ->groupBy('sender_id')
+            ->pluck('cnt', 'sender_id');
+
+        // Rakit contactList dari data yang sudah tersedia — tanpa query tambahan
+        $contactList = $contactIds->map(function ($contactId) use ($users, $lastMessages, $unreadCounts) {
+            $contact = $users->get($contactId);
             if (!$contact) return null;
 
-            $lastMessage = Message::where(function ($q) use ($userId, $contactId) {
-                    $q->where('sender_id', $userId)->where('receiver_id', $contactId);
-                })
-                ->orWhere(function ($q) use ($userId, $contactId) {
-                    $q->where('sender_id', $contactId)->where('receiver_id', $userId);
-                })
-                ->latest()
-                ->first();
-
-            $unreadCount = Message::where('sender_id', $contactId)
-                ->where('receiver_id', $userId)
-                ->where('is_read', false)
-                ->count();
-
             return (object) [
-                'user'         => $contact,
-                'lastMessage'  => $lastMessage,
-                'unreadCount'  => $unreadCount,
+                'user'        => $contact,
+                'lastMessage' => $lastMessages->get($contactId),
+                'unreadCount' => $unreadCounts->get($contactId, 0),
             ];
-        })->filter();
+        })->filter()->values();
 
         // Tentukan layout berdasarkan role
         $layout = auth()->user()->role === 'seller' ? 'layouts.seller' : 'layouts.buyer';

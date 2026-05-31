@@ -17,7 +17,9 @@ class BuyerOrderController extends Controller
             $tab = 'riwayat';
         }
         
-        $query = Order::where('buyer_id', $request->user()->id)
+        $buyerId = $request->user()->id;
+
+        $query = Order::where('buyer_id', $buyerId)
             ->with(['seller', 'items.product', 'review'])
             ->orderBy('created_at', 'desc');
 
@@ -27,13 +29,21 @@ class BuyerOrderController extends Controller
             $orders = $query->whereIn('status', ['selesai', 'dibatalkan'])->get();
         }
 
-        // Hitung count per tab untuk badge
-        $countAktif = Order::where('buyer_id', $request->user()->id)
-            ->whereIn('status', ['menunggu_verifikasi', 'diproses', 'siap_diambil'])
-            ->count();
-        $countRiwayat = Order::where('buyer_id', $request->user()->id)
-            ->whereIn('status', ['selesai', 'dibatalkan'])
-            ->count();
+        // Hitung count per tab dalam 1 query GROUP BY status
+        $statusCounts = Order::where('buyer_id', $buyerId)
+            ->selectRaw('status, COUNT(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
+        $countAktif = (int) (
+            $statusCounts->get('menunggu_verifikasi', 0) +
+            $statusCounts->get('diproses', 0) +
+            $statusCounts->get('siap_diambil', 0)
+        );
+        $countRiwayat = (int) (
+            $statusCounts->get('selesai', 0) +
+            $statusCounts->get('dibatalkan', 0)
+        );
 
         return view('buyer.orders.index', compact(
             'orders', 'tab', 'countAktif', 'countRiwayat'
