@@ -86,7 +86,8 @@ class BuyerController extends Controller
             ->whereHas('user', function ($q) {
                 $q->where('is_banned', false);
             })
-            ->withCount('products')->get();
+            ->withAvg('reviews', 'rating')
+            ->withCount(['products', 'reviews'])->get();
 
         // Injeksi array favorit buyer untuk tombol hati
         $userFavorites = auth()->check()
@@ -104,7 +105,11 @@ class BuyerController extends Controller
             ->whereHas('user', function ($q) {
                 $q->where('is_banned', false);
             })
-            ->with(['products.discounts'])
+            ->with(['products.discounts', 'reviews' => function($q) {
+                $q->with('buyer')->orderBy('created_at', 'desc');
+            }])
+            ->withAvg('reviews', 'rating')
+            ->withCount('reviews')
             ->findOrFail($id);
 
         return view('buyer.store-show', compact('seller'));

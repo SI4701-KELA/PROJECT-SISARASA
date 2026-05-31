@@ -123,8 +123,8 @@ class CheckoutController extends Controller
                 $paymentProofPath = $request->file('payment_proof')->store('payments', 'public');
             }
 
-            // Tentukan status berdasarkan metode pembayaran
-            $status = ($paymentMethod === 'cash') ? 'diproses' : 'menunggu_verifikasi';
+            // Tentukan status pesanan (Wajib 'menunggu_verifikasi' agar pembeli dapat membatalkan pesanan dalam 15 detik)
+            $status = 'menunggu_verifikasi';
 
             // Buat order
             $order = Order::create([
@@ -177,7 +177,7 @@ class CheckoutController extends Controller
 
             DB::commit();
 
-            return redirect()->route('buyer.checkout.success', $order->id)
+            return redirect()->route('buyer.orders.show', $order->id)
                 ->with('success', 'Pesanan berhasil dibuat!');
 
         } catch (\Exception $e) {

@@ -80,6 +80,27 @@
             </div>
         @endif
 
+        @if($order->status === 'siap_diambil' && $order->pickup_code)
+            {{-- QR Code & Pickup Code Section --}}
+            <div class="mb-6 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-gray-50 to-slate-50 border border-gray-100 rounded-3xl shadow-inner text-center">
+                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Tunjukkan QR Code ini ke Penjual</p>
+                
+                {{-- QR Code Box --}}
+                <div class="bg-white p-4 rounded-2xl shadow-md border border-gray-100/60 flex items-center justify-center mb-3">
+                    <div id="qrcode-container" class="w-48 h-48 flex items-center justify-center bg-gray-50 rounded-xl overflow-hidden">
+                        <canvas id="qrcode-canvas" class="w-full h-full"></canvas>
+                    </div>
+                </div>
+                
+                <p class="text-[10px] text-gray-400 font-bold mb-1.5 uppercase tracking-wide">Kode Unik Pengambilan</p>
+                <div class="inline-flex items-center gap-2 px-5 py-1.5 bg-white rounded-xl border border-gray-100 shadow-sm">
+                    <span class="text-xl font-black text-gray-900 tracking-widest font-mono select-all uppercase">
+                        {{ $order->pickup_code }}
+                    </span>
+                </div>
+            </div>
+        @endif
+
         {{-- Order Details --}}
         <div class="space-y-2 mb-6">
             <div class="flex justify-between text-sm">
@@ -127,3 +148,21 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        @if($order->status === 'siap_diambil' && !empty($order->pickup_code))
+            var qr = new QRious({
+                element: document.getElementById('qrcode-canvas'),
+                value: '{{ $order->pickup_code }}',
+                size: 200,
+                background: '#ffffff',
+                foreground: '#0f172a',
+                level: 'H'
+            });
+        @endif
+    });
+</script>
+@endpush
