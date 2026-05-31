@@ -47,32 +47,24 @@ class FavoriteController extends Controller
     {
         $userId = auth()->id();
 
-        // Tarik semua seller yang difavoritkan oleh user ini
+        // Tarik semua seller yang difavoritkan beserta waktu favorit
         $favoriteRecords = FavoriteStore::where('user_id', $userId)
             ->with(['seller' => function ($query) {
-                $query->with(['products.stock', 'products.category', 'products.discount', 'user']);
+                // withSum langsung di query — tidak perlu load seluruh products hanya untuk sum
+                $query->withSum('products.stock as total_surplus_sum', 'qty_surplus');
             }])
-            ->latest() // Sort by yang terbaru difavoritkan
+            ->latest()
             ->get();
 
-        // Ekstrak seller collection dari records + hitung surplus tersedia
+        // Rakit seller collection dari records
         $sellers = $favoriteRecords->map(function ($fav) {
             $seller = $fav->seller;
             if ($seller) {
-                // Hitung total qty_surplus yang tersedia di semua produk toko ini
-                $totalSurplus = 0;
-                if ($seller->products) {
-                    foreach ($seller->products as $product) {
-                        if ($product->stock) {
-                            $totalSurplus += $product->stock->qty_surplus ?? 0;
-                        }
-                    }
-                }
-                $seller->total_surplus = $totalSurplus;
-                $seller->favorited_at = $fav->created_at;
+                $seller->total_surplus  = (int) ($seller->total_surplus_sum ?? 0);
+                $seller->favorited_at   = $fav->created_at;
             }
             return $seller;
-        })->filter(); // Hapus null jika seller sudah dihapus
+        })->filter();
 
         // Ambil daftar favorit sebagai array untuk tombol hati
         $userFavorites = FavoriteStore::where('user_id', $userId)

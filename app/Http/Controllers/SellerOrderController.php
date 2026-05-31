@@ -34,11 +34,16 @@ class SellerOrderController extends Controller
             $orders = $query->get();
         }
 
-        // Hitung count per tab untuk badge
-        $countBaru = Order::where('seller_id', $seller->id)->where('status', 'menunggu_verifikasi')->count();
-        $countDiproses = Order::where('seller_id', $seller->id)->where('status', 'diproses')->count();
-        $countSiap = Order::where('seller_id', $seller->id)->where('status', 'siap_diambil')->count();
-        $countSelesai = Order::where('seller_id', $seller->id)->whereIn('status', ['selesai', 'dibatalkan'])->count();
+        // Hitung count per tab dalam 1 query GROUP BY status
+        $statusCounts = Order::where('seller_id', $seller->id)
+            ->selectRaw('status, COUNT(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
+        $countBaru     = (int) $statusCounts->get('menunggu_verifikasi', 0);
+        $countDiproses = (int) $statusCounts->get('diproses', 0);
+        $countSiap     = (int) $statusCounts->get('siap_diambil', 0);
+        $countSelesai  = (int) ($statusCounts->get('selesai', 0) + $statusCounts->get('dibatalkan', 0));
 
         return view('seller.orders', compact(
             'orders', 'tab', 'seller',

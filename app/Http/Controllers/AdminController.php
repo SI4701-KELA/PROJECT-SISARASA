@@ -3,11 +3,57 @@
 namespace App\Http\Controllers;
 
 use App\Models\Seller;
+use App\Models\Order;
+use App\Models\OrderItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 class AdminController extends Controller
 {
+    /**
+     * PBI-22: Impact Tracker — Dampak Sosial & Lingkungan Platform.
+     * Agregasi HANYA dari orders.status = 'Selesai' DAN order_items.is_surplus = true.
+     */
+    public function impactTracker()
+    {
+        // Base constraint: hanya order_items surplus dari pesanan Selesai
+        // Gunakan 1 JOIN query terpusat untuk semua metrik (menghindari whereHas berulang)
+        $surplusBase = \Illuminate\Support\Facades\DB::table('order_items')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->where('orders.status', 'Selesai')
+            ->where('order_items.is_surplus', true);
+
+        // Metrik 1 — Total Food Saved (porsi)
+        $totalFoodSaved = (int) (clone $surplusBase)->sum('order_items.qty');
+
+        // Metrik 2 — Nilai Finansial Diselamatkan (Rupiah)
+        $financialSaved = (int) (clone $surplusBase)->sum(DB::raw('order_items.qty * order_items.price'));
+
+        // Metrik 3 — Dampak Lingkungan (Asumsi 1 porsi = 0.5 Kg CO2 dicegah)
+        $carbonSaved = round($totalFoodSaved * 0.5, 1);
+
+        // Metrik 4 — Total UMKM Kontributor (seller_id unik)
+        $totalUmkm = (int) (clone $surplusBase)->distinct()->count('orders.seller_id');
+
+        // Bonus — Top 5 Pahlawan UMKM
+        $topSellers = (clone $surplusBase)
+            ->join('sellers', 'orders.seller_id', '=', 'sellers.id')
+            ->select('sellers.id', 'sellers.store_name', DB::raw('SUM(order_items.qty) as total_porsi'))
+            ->groupBy('sellers.id', 'sellers.store_name')
+            ->orderByDesc('total_porsi')
+            ->limit(5)
+            ->get();
+
+        return view('admin.impact-tracker', compact(
+            'totalFoodSaved',
+            'financialSaved',
+            'carbonSaved',
+            'totalUmkm',
+            'topSellers'
+        ));
+    }
+
     public function viewDocument($id)
     {
         $seller = Seller::findOrFail($id);
@@ -21,13 +67,30 @@ class AdminController extends Controller
 
     public function validations()
     {
-        $sellers = Seller::orderBy('created_at', 'desc')->get();
+        // Pilih kolom spesifik yang dibutuhkan view — hindari SELECT *
+        $sellers = Seller::select([
+                'id', 'user_id', 'store_name', 'address', 'verification_status',
+                'rejection_reason', 'document_path', 'verified_at',
+                'store_photo', 'pending_profile_updates', 'created_at',
+            ])
+            ->with('user:id,name,email,phone')
+            ->orderBy('created_at', 'desc')
+            ->get();
         return view('admin.validations', compact('sellers'));
     }
 
     public function stores()
     {
-        $sellers = Seller::orderBy('created_at', 'desc')->get();
+        // Pilih kolom spesifik yang dibutuhkan view — hindari SELECT *
+        $sellers = Seller::select([
+                'id', 'user_id', 'store_name', 'address', 'verification_status',
+                'rejection_reason', 'document_path', 'verified_at', 'store_photo',
+                'open_time', 'close_time', 'latitude', 'longitude',
+                'pending_profile_updates', 'created_at',
+            ])
+            ->with('user:id,name,email,is_banned')
+            ->orderBy('created_at', 'desc')
+            ->get();
         return view('admin.stores', compact('sellers'));
     }
 

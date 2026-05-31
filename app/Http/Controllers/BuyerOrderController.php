@@ -12,34 +12,96 @@ class BuyerOrderController extends Controller
      */
     public function index(Request $request)
     {
-        $tab = $request->input('tab', 'semua');
+        $tab = $request->input('tab', 'riwayat');
+        if (!in_array($tab, ['riwayat', 'aktif'])) {
+            $tab = 'riwayat';
+        }
         
-        $query = Order::where('buyer_id', $request->user()->id)
-            ->with(['seller', 'items.product'])
+        $buyerId = $request->user()->id;
+
+        $query = Order::where('buyer_id', $buyerId)
+            ->with(['seller', 'items.product', 'review'])
             ->orderBy('created_at', 'desc');
 
-        if ($tab === 'baru') {
-            $orders = $query->where('status', 'menunggu_verifikasi')->get();
-        } elseif ($tab === 'diproses') {
-            $orders = $query->where('status', 'diproses')->get();
-        } elseif ($tab === 'siap') {
-            $orders = $query->where('status', 'siap_diambil')->get();
-        } elseif ($tab === 'selesai') {
-            $orders = $query->whereIn('status', ['selesai', 'dibatalkan'])->get();
+        if ($tab === 'aktif') {
+            $orders = $query->whereIn('status', ['menunggu_verifikasi', 'diproses', 'siap_diambil'])->get();
         } else {
-            $orders = $query->get();
+            $orders = $query->whereIn('status', ['selesai', 'dibatalkan'])->get();
         }
 
-        // Hitung count per tab untuk badge
-        $countSemua = Order::where('buyer_id', $request->user()->id)->count();
-        $countBaru = Order::where('buyer_id', $request->user()->id)->where('status', 'menunggu_verifikasi')->count();
-        $countDiproses = Order::where('buyer_id', $request->user()->id)->where('status', 'diproses')->count();
-        $countSiap = Order::where('buyer_id', $request->user()->id)->where('status', 'siap_diambil')->count();
-        $countSelesai = Order::where('buyer_id', $request->user()->id)->whereIn('status', ['selesai', 'dibatalkan'])->count();
+        // Hitung count per tab dalam 1 query GROUP BY status
+        $statusCounts = Order::where('buyer_id', $buyerId)
+            ->selectRaw('status, COUNT(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
+        $countAktif = (int) (
+            $statusCounts->get('menunggu_verifikasi', 0) +
+            $statusCounts->get('diproses', 0) +
+            $statusCounts->get('siap_diambil', 0)
+        );
+        $countRiwayat = (int) (
+            $statusCounts->get('selesai', 0) +
+            $statusCounts->get('dibatalkan', 0)
+        );
 
         return view('buyer.orders.index', compact(
-            'orders', 'tab', 
-            'countSemua', 'countBaru', 'countDiproses', 'countSiap', 'countSelesai'
+            'orders', 'tab', 'countAktif', 'countRiwayat'
         ));
+    }
+
+    /**
+     * Menampilkan detail invoice untuk pesanan tertentu.
+     */
+    public function show(Request $request, $id)
+    {
+        $order = Order::where('id', $id)
+            ->where('buyer_id', $request->user()->id)
+            ->with(['seller.user', 'items.product'])
+            ->firstOrFail();
+
+        return view('buyer.orders.show', compact('order'));
+    }
+    /**
+     * Membatalkan pesanan oleh pembeli.
+     */
+    public function cancel(Request $request, $id)
+    {
+        $request->validate([
+            'cancellation_reason' => 'required|string',
+        ], [
+            'cancellation_reason.required' => 'Alasan pembatalan wajib diisi.',
+        ]);
+
+        $order = Order::where('id', $id)
+            ->where('buyer_id', $request->user()->id)
+            ->with('items')
+            ->firstOrFail();
+
+        // Security Guard: Tolak request jika status bukan 'menunggu_verifikasi' ATAU waktu 15 detik sudah habis
+        if ($order->status !== 'menunggu_verifikasi' || now()->diffInSeconds($order->created_at) > 15) {
+            abort(400, 'Pesanan tidak dapat dibatalkan.');
+        }
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($order, $request) {
+            $order->update([
+                'status' => 'dibatalkan',
+                'cancellation_reason' => $request->input('cancellation_reason'),
+            ]);
+
+            // Kembalikan stok
+            foreach ($order->items as $item) {
+                $stock = \App\Models\Stock::where('product_id', $item->product_id)->first();
+                if ($stock) {
+                    if ($item->is_surplus) {
+                        $stock->increment('qty_surplus', $item->qty);
+                    } else {
+                        $stock->increment('qty_reg', $item->qty);
+                    }
+                }
+            }
+        });
+
+        return redirect()->back()->with('success', 'Pesanan berhasil dibatalkan.');
     }
 }

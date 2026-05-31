@@ -4,6 +4,8 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>@yield('title', 'Seller Console') - Sisa Rasa</title>
 @vite(['resources/css/app.css', 'resources/js/app.js'])
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{font-family:'Inter',sans-serif;}body{background:#F7F5F3;}
@@ -40,13 +42,7 @@
         <div class="sidebar-bar"></div>
       @endif
     </a>
-    {{-- Daftar Pesanan --}}
-    @php
-      $sellerForOrders = auth()->user()->seller ?? null;
-      $pendingOrdersCount = $sellerForOrders
-        ? \App\Models\Order::where('seller_id', $sellerForOrders->id)->where('status', 'menunggu_verifikasi')->count()
-        : 0;
-    @endphp
+    {{-- Daftar Pesanan — badge dari SellerSidebarComposer (di-cache 30 detik) --}}
     <a href="{{ route('seller.orders') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm relative {{ request()->routeIs('seller.orders') ? 'tr font-semibold bg-red-50/40' : 'text-gray-400 font-medium hover:text-gray-600 hover:bg-gray-50' }}">
       <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
       Daftar Pesanan
@@ -58,22 +54,32 @@
       @endif
     </a>
     {{-- Review & Ulasan --}}
-    <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 font-medium text-sm hover:text-gray-600 hover:bg-gray-50">
-      <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>Review & Ulasan
+    <a href="{{ route('seller.reviews') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm relative {{ request()->routeIs('seller.reviews') ? 'tr font-semibold bg-red-50/40' : 'text-gray-400 font-medium hover:text-gray-600 hover:bg-gray-50' }}">
+      <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+      Review & Ulasan
+      @if(request()->routeIs('seller.reviews'))
+        <div class="sidebar-bar"></div>
+      @endif
     </a>
     {{-- Dashboard Analitik --}}
-    <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 font-medium text-sm hover:text-gray-600 hover:bg-gray-50">
+    <a href="{{ route('seller.analytics') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm relative {{ request()->routeIs('seller.analytics') ? 'tr font-semibold bg-red-50/40' : 'text-gray-400 font-medium hover:text-gray-600 hover:bg-gray-50' }}">
       <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>Dashboard Analitik
+      @if(request()->routeIs('seller.analytics'))
+        <div class="sidebar-bar"></div>
+      @endif
     </a>
-    {{-- Komplain Masuk --}}
-    @php
-      $sellerModel = auth()->user()->seller ?? null;
-      $incomingComplaintsCount = $sellerModel
-        ? \App\Models\Complaint::where('seller_id', $sellerModel->id)
-            ->whereIn('status_tiket', ['Open', 'Sedang Diproses'])
-            ->count()
-        : 0;
-    @endphp
+    {{-- Inbox Chat — badge dari SellerSidebarComposer (di-cache 30 detik) --}}
+    <a href="{{ route('chat.inbox') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm relative {{ request()->routeIs('chat.*') ? 'tr font-semibold bg-red-50/40' : 'text-gray-400 font-medium hover:text-gray-600 hover:bg-gray-50' }}">
+      <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+      Inbox Chat
+      @if($unreadSellerChatCount > 0)
+        <span class="ml-auto bg-red-500 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full animate-pulse">{{ $unreadSellerChatCount > 9 ? '9+' : $unreadSellerChatCount }}</span>
+      @endif
+      @if(request()->routeIs('chat.*'))
+        <div class="sidebar-bar"></div>
+      @endif
+    </a>
+    {{-- Komplain Masuk — badge dari SellerSidebarComposer (di-cache 30 detik) --}}
     <a href="{{ route('seller.complaints') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm relative {{ request()->routeIs('seller.complaints') ? 'tr font-semibold bg-red-50/40' : 'text-gray-400 font-medium hover:text-gray-600 hover:bg-gray-50' }}">
       <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
       Komplain Masuk
@@ -112,7 +118,9 @@
             <p class="text-sm font-semibold text-gray-800 leading-none">{{ Auth::user()->name ?? 'Seller' }}</p>
             <p class="text-[10px] text-gray-400 mt-0.5 uppercase">SELLER</p>
           </div>
-          <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name ?? 'Seller') }}&background=C0392B&color=fff&size=64" class="w-9 h-9 rounded-xl">
+          <div class="w-9 h-9 rounded-xl bg-[#C0392B] flex items-center justify-center text-white font-bold text-sm">
+            {{ strtoupper(substr(Auth::user()->name ?? 'S', 0, 1)) }}
+          </div>
         </button>
 
         <div x-show="open" x-transition:enter="transition ease-out duration-100" x-transition:enter-start="transform opacity-0 scale-95" x-transition:enter-end="transform opacity-100 scale-100" x-transition:leave="transition ease-in duration-75" x-transition:leave-start="transform opacity-100 scale-100" x-transition:leave-end="transform opacity-0 scale-95" class="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg py-1 border border-gray-100 z-50" style="display: none;">

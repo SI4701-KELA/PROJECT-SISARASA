@@ -4,6 +4,8 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>@yield('title', 'Buyer Console') - Sisa Rasa</title>
 @vite(['resources/css/app.css', 'resources/js/app.js'])
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{font-family:'Inter',sans-serif;}body{background:#F7F5F3;}
@@ -82,12 +84,19 @@
       @endif
     </a>
 
-    {{-- Pusat Bantuan (Komplain) --}}
-    @php
-      $activeComplaintsCount = \App\Models\Complaint::where('buyer_id', auth()->id())
-        ->whereIn('status_tiket', ['Open', 'Sedang Diproses'])
-        ->count();
-    @endphp
+    {{-- Inbox Chat — badge dari BuyerSidebarComposer (di-cache 30 detik) --}}
+    <a href="{{ route('chat.inbox') }}" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl text-sm relative transition-all {{ request()->routeIs('chat.*') ? 'tr font-bold bg-red-50/50 shadow-sm' : 'text-gray-500 font-semibold hover:text-gray-700 hover:bg-gray-50' }}">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+      Inbox Chat
+      @if($unreadChatCount > 0)
+        <span class="ml-auto bg-red-500 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full animate-pulse">{{ $unreadChatCount > 9 ? '9+' : $unreadChatCount }}</span>
+      @endif
+      @if(request()->routeIs('chat.*'))
+        <div class="sidebar-bar -left-4"></div>
+      @endif
+    </a>
+
+    {{-- Pusat Bantuan — badge dari BuyerSidebarComposer (di-cache 30 detik) --}}
     <a href="{{ route('buyer.complaints.index') }}" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl text-sm relative transition-all {{ request()->routeIs('buyer.complaints.*') ? 'tr font-bold bg-red-50/50 shadow-sm' : 'text-gray-500 font-semibold hover:text-gray-700 hover:bg-gray-50' }}">
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
       Pusat Bantuan
@@ -121,14 +130,13 @@
     </div>
     
     <div class="flex items-center gap-8">
-      {{-- Cart Icon --}}
-      @php $cartCount = \App\Models\Cart::where('buyer_id', auth()->id())->count(); @endphp
+      {{-- Cart Icon — pakai $cartCount dari BuyerSidebarComposer (di-cache 30 detik) --}}
       <a href="{{ route('buyer.cart') }}" class="relative text-gray-400 hover:text-terracotta transition-colors">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
         <span class="cart-badge-count absolute -top-1.5 -right-2 bg-red-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">{{ $cartCount }}</span>
       </a>
 
-      {{-- Profile Dropdown --}}
+      {{-- Profile Dropdown — avatar via inisial CSS (tidak ada external HTTP request) --}}
       <div class="relative" x-data="{ open: false }" @click.away="open = false">
         <button @click="open = !open" class="flex items-center gap-3 text-left focus:outline-none group">
           <div class="w-10 h-10 rounded-full bg-terracotta flex items-center justify-center text-white font-bold shadow-sm group-hover:scale-105 transition-transform">
