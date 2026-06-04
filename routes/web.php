@@ -15,6 +15,7 @@ use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\SellerComplaintController;
 use App\Http\Controllers\SellerOrderController;
 use App\Http\Controllers\BuyerOrderController;
+use App\Http\Controllers\SellerVoucherController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -90,6 +91,13 @@ Route::middleware(['auth', 'check.banned', 'role:seller'])->prefix('seller')->gr
         Route::put('/product/{id}', [SellerController::class, 'updateProduct'])->name('product.update');
         Route::delete('/product/{id}', [SellerController::class, 'destroyProduct'])->name('product.destroy');
         Route::patch('/product/{id}/toggle-discount', [SellerController::class, 'toggleDiscount'])->name('seller.product.toggle-discount');
+
+        // PBI-32: Seller Voucher Management
+        Route::get('/vouchers', [SellerVoucherController::class, 'index'])->name('seller.vouchers.index');
+        Route::post('/vouchers', [SellerVoucherController::class, 'store'])->name('seller.vouchers.store');
+        Route::put('/vouchers/{id}', [SellerVoucherController::class, 'update'])->name('seller.vouchers.update');
+        Route::delete('/vouchers/{id}', [SellerVoucherController::class, 'destroy'])->name('seller.vouchers.destroy');
+        Route::patch('/vouchers/{id}/toggle-status', [SellerVoucherController::class, 'toggleStatus'])->name('seller.vouchers.toggle-status');
     });
 });
 
@@ -116,6 +124,7 @@ Route::middleware(['auth', 'check.banned', 'role:buyer'])->prefix('buyer')->grou
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('buyer.checkout');
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('buyer.checkout.store');
     Route::get('/checkout/success/{orderId}', [CheckoutController::class, 'success'])->name('buyer.checkout.success');
+    Route::post('/checkout/check-voucher', [CheckoutController::class, 'checkVoucher'])->name('buyer.checkout.check-voucher');
 
     // Riwayat Pesanan Pembeli
     Route::get('/orders', [BuyerOrderController::class, 'index'])->name('buyer.orders.index');

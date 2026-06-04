@@ -187,6 +187,57 @@
     </div>
 
 
+    @if(!$vouchers->isEmpty())
+    {{-- Vouchers Section --}}
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-6 p-6">
+        <div class="flex items-center gap-2 mb-4">
+            <div class="w-8 h-8 rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/></svg>
+            </div>
+            <div>
+                <h2 class="text-base font-bold text-gray-900">Kupon & Promo Tersedia</h2>
+                <p class="text-xs text-gray-400 mt-0.5 font-medium">Gunakan kode voucher di bawah saat checkout untuk mendapatkan potongan harga.</p>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            @foreach($vouchers as $voucher)
+                <div x-data="{ copied: false }" class="relative flex items-center justify-between bg-orange-50/40 border border-dashed border-orange-200 rounded-2xl p-4 transition-all hover:bg-orange-50">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-orange-100/80 flex items-center justify-center text-orange-600 shrink-0 shadow-sm">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/></svg>
+                        </div>
+                        <div>
+                            <p class="text-sm font-black text-gray-800 leading-tight">
+                                @if($voucher->type === 'percent')
+                                    Diskon {{ $voucher->value }}%
+                                @else
+                                    Potongan Rp {{ number_format($voucher->value, 0, ',', '.') }}
+                                @endif
+                            </p>
+                            <p class="text-[11px] font-semibold text-gray-500 mt-0.5">
+                                Min. Belanja Rp {{ number_format($voucher->min_order, 0, ',', '.') }}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-2">
+                        <span class="px-2.5 py-1 bg-white border border-orange-100 rounded-lg text-xs font-mono font-bold text-orange-700 tracking-wider">
+                            {{ $voucher->code }}
+                        </span>
+                        <button @click="navigator.clipboard.writeText('{{ $voucher->code }}'); copied = true; setTimeout(() => copied = false, 2000)"
+                                class="px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm focus:outline-none flex items-center justify-center shrink-0 min-w-[64px]"
+                                :class="copied ? 'bg-emerald-600 hover:bg-emerald-700' : ''">
+                            <span x-text="copied ? 'Disalin!' : 'Salin'"></span>
+                        </button>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    </div>
+    @endif
+
+
     {{-- Products Section --}}
     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
 
