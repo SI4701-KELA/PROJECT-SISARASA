@@ -76,10 +76,10 @@ class SellerOrderController extends Controller
     public function rejectPayment(Request $request, $id)
     {
         $request->validate([
-            'cancellation_reason' => 'required|string|min:5',
+            'cancellation_reason' => 'required|string|in:Toko tutup,Berubah pikiran,Stok habis',
         ], [
             'cancellation_reason.required' => 'Alasan penolakan wajib diisi.',
-            'cancellation_reason.min'      => 'Alasan penolakan minimal 5 karakter.',
+            'cancellation_reason.in'       => 'Alasan penolakan tidak valid.',
         ]);
 
         $seller = Seller::where('user_id', $request->user()->id)->firstOrFail();
@@ -199,9 +199,10 @@ class SellerOrderController extends Controller
     public function cancel(Request $request, $id)
     {
         $request->validate([
-            'cancellation_reason' => 'required|string',
+            'cancellation_reason' => 'required|string|in:Toko tutup,Berubah pikiran,Stok habis',
         ], [
             'cancellation_reason.required' => 'Alasan pembatalan wajib diisi.',
+            'cancellation_reason.in'       => 'Alasan pembatalan tidak valid.',
         ]);
 
         $seller = Seller::where('user_id', $request->user()->id)->firstOrFail();

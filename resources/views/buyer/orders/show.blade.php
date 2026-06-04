@@ -301,7 +301,7 @@
                                 @click="showModal = false"
                                 class="w-7 h-7 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 text-xs font-bold transition-colors"
                             >✕</button>
-                            <h3 id="cancel-modal-title" class="text-sm font-bold text-gray-900">Pilih Alasan</h3>
+                            <h3 id="cancel-modal-title" class="text-sm font-bold text-gray-900">Pilih Alasan Pembatalan</h3>
                         </div>
 
                         <form
@@ -312,37 +312,36 @@
                             @csrf
                             @method('PATCH')
 
-                            {{-- Daftar Alasan (scrollable) --}}
-                            <div class="overflow-y-auto px-5 py-4 space-y-3 grow">
-                                @php
-                                    $reasons = [
-                                        'Pembayaran gagal',
-                                        'Posisi Driver terlalu jauh',
-                                        'Saya berubah pikiran',
-                                        'Lupa pakai Voucher',
-                                        'Kesalahan alamat atau nomor telepon',
-                                        'Driver ingin membatalkan',
-                                        'Driver tidak memiliki uang yang cukup',
-                                        'Driver tidak bisa dihubungi',
-                                        'Lainnya',
-                                    ];
-                                @endphp
-
-                                @foreach($reasons as $r)
-                                    <label class="flex items-center gap-3 cursor-pointer group py-1">
-                                        <input
-                                            type="radio"
-                                            x-model="reason"
-                                            name="cancellation_reason_radio"
-                                            value="{{ $r }}"
-                                            class="w-5 h-5 shrink-0 cursor-pointer"
-                                            style="accent-color: #c04b36;"
-                                        >
-                                        <span class="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors leading-snug">
-                                            {{ $r }}
-                                        </span>
+                            {{-- Daftar Alasan (Dropdown) --}}
+                            <div class="px-5 py-4 space-y-4 grow">
+                                <div>
+                                    <label for="cancellation_reason_select" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                                        Alasan Pembatalan <span class="text-red-500">*</span>
                                     </label>
-                                @endforeach
+                                    <select
+                                        id="cancellation_reason_select"
+                                        x-model="reason"
+                                        class="w-full bg-white border border-gray-200 focus:border-[#c04b36] focus:ring-1 focus:ring-[#c04b36] rounded-xl px-4 py-3 text-sm text-gray-800 font-semibold transition-all"
+                                    >
+                                        <option value="" disabled selected>Pilih Alasan Pembatalan</option>
+                                        @php
+                                            $reasons = [
+                                                'Pembayaran gagal',
+                                                'Posisi Driver terlalu jauh',
+                                                'Saya berubah pikiran',
+                                                'Lupa pakai Voucher',
+                                                'Kesalahan alamat atau nomor telepon',
+                                                'Driver ingin membatalkan',
+                                                'Driver tidak memiliki uang yang cukup',
+                                                'Driver tidak bisa dihubungi',
+                                                'Lainnya',
+                                            ];
+                                        @endphp
+                                        @foreach($reasons as $r)
+                                            <option value="{{ $r }}">{{ $r }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
 
                                 {{-- Textarea Lainnya --}}
                                 <div x-show="reason === 'Lainnya'" x-cloak class="pt-1">
@@ -350,8 +349,7 @@
                                         x-model="otherReason"
                                         name="cancellation_reason_other"
                                         rows="3"
-                                        class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2"
-                                        style="focus-ring-color:#c04b36"
+                                        class="w-full border border-gray-200 focus:border-[#c04b36] focus:ring-1 focus:ring-[#c04b36] rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 font-medium transition-all resize-none"
                                         placeholder="Tulis alasan lainnya..."
                                     ></textarea>
                                 </div>

@@ -312,9 +312,13 @@
                 @csrf @method('PATCH')
                 <div class="mb-4">
                     <label for="cancellation_reason" class="block text-sm font-bold text-gray-700 mb-2">Alasan Penolakan <span class="text-red-500">*</span></label>
-                    <textarea name="cancellation_reason" id="cancellation_reason" rows="3" required minlength="5"
-                              placeholder="Contoh: Nominal transfer kurang 5 ribu"
-                              class="w-full bg-white border border-gray-200 focus:border-[#c04b36] focus:ring-1 focus:ring-[#c04b36] rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 font-medium transition-all resize-none"></textarea>
+                    <select name="cancellation_reason" id="cancellation_reason" required
+                            class="w-full bg-white border border-gray-200 focus:border-[#c04b36] focus:ring-1 focus:ring-[#c04b36] rounded-xl px-4 py-3 text-sm text-gray-800 font-semibold transition-all">
+                        <option value="" disabled selected>Pilih Alasan Penolakan</option>
+                        <option value="Toko tutup">Toko tutup</option>
+                        <option value="Berubah pikiran">Berubah pikiran</option>
+                        <option value="Stok habis">Stok habis</option>
+                    </select>
                 </div>
                 <div class="flex gap-3 justify-end">
                     <button type="button" @click="showRejectModal = false" class="px-5 py-2.5 text-sm font-bold text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors">
