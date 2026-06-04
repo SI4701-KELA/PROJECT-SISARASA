@@ -71,10 +71,57 @@
                         @endforeach
                     </div>
 
+                    {{-- Promo/Voucher Section --}}
+                    <div class="mt-6 pt-4 border-t border-gray-100">
+                        <label for="promo_code_input" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Kode Voucher / Promo</label>
+                        <div class="flex gap-3">
+                            <input type="text" id="promo_code_input" x-model="promoInput" :disabled="voucherApplied"
+                                   placeholder="Contoh: SISARASABARU"
+                                   class="flex-1 bg-gray-50 border border-gray-200 focus:bg-white focus:border-[#c04b36] focus:ring-1 focus:ring-[#c04b36] rounded-xl px-4 py-2.5 text-sm text-gray-800 placeholder-gray-400 font-semibold transition-all">
+                            <button type="button" @click="applyVoucher" :disabled="voucherApplied || !promoInput"
+                                    class="px-5 py-2.5 bg-[#c04b36] hover:bg-[#a33d2b] disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold text-xs rounded-xl transition-all shadow-md shrink-0 flex items-center justify-center gap-2">
+                                <span x-show="checkingVoucher" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                                <span x-text="voucherApplied ? 'Terpasang' : 'Gunakan'"></span>
+                            </button>
+                            <button type="button" x-show="voucherApplied" @click="removeVoucher"
+                                    class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold text-xs rounded-xl transition-all shrink-0">
+                                Batal
+                            </button>
+                        </div>
+                        @if(!$vouchers->isEmpty())
+                        <div class="mt-3" x-show="!voucherApplied">
+                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Voucher Tersedia untuk Toko Ini:</p>
+                            <div class="flex flex-wrap gap-2">
+                                @foreach($vouchers as $voucher)
+                                    @php
+                                        $label = $voucher->type === 'percent' ? $voucher->value . '%' : 'Rp ' . number_format($voucher->value, 0, ',', '.');
+                                    @endphp
+                                    <button type="button" @click="promoInput = '{{ $voucher->code }}'; applyVoucher()"
+                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 hover:bg-orange-100 border border-dashed border-orange-200 rounded-lg text-xs font-semibold text-orange-700 transition-all hover:scale-[1.02] focus:outline-none">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/></svg>
+                                        <span class="font-mono font-bold">{{ $voucher->code }}</span>
+                                        <span class="text-[10px] bg-white px-1.5 py-0.5 rounded border border-orange-100 font-bold text-orange-600">Potongan {{ $label }}</span>
+                                    </button>
+                                @endforeach
+                            </div>
+                        </div>
+                        @endif
+                        <div class="mt-2 text-xs font-bold" :class="voucherSuccess ? 'text-green-600' : 'text-red-500'" x-show="voucherMessage" x-cloak>
+                            <span x-text="voucherMessage"></span>
+                        </div>
+                        <input type="hidden" name="promo_code" :value="appliedVoucherCode">
+                    </div>
+
+                    {{-- Discount Breakdown (visible only when voucher applied) --}}
+                    <div class="mt-4 pt-3 border-t border-gray-100/50 flex items-center justify-between text-sm" x-show="voucherApplied" x-cloak>
+                        <p class="font-medium text-gray-500">Potongan Voucher (<span class="font-bold text-gray-800" x-text="appliedVoucherCode"></span>)</p>
+                        <p class="font-bold text-green-600">-Rp <span x-text="formatRupiah(discountAmount)"></span></p>
+                    </div>
+
                     {{-- Total --}}
                     <div class="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
                         <p class="text-sm font-bold text-gray-500">Total Tagihan</p>
-                        <p class="text-xl font-black text-gray-900" id="checkout-total">Rp {{ number_format($grandTotal, 0, ',', '.') }}</p>
+                        <p class="text-xl font-black text-gray-900" id="checkout-total" x-text="'Rp ' + formatRupiah(finalTotal)"></p>
                     </div>
                 </div>
             </div>
@@ -177,17 +224,85 @@ function checkoutManager() {
     return {
         paymentMethod: '',
         proofUploaded: false,
+        
+        // Voucher state
+        promoInput: '',
+        checkingVoucher: false,
+        voucherApplied: false,
+        voucherSuccess: false,
+        voucherMessage: '',
+        appliedVoucherCode: '',
+        discountAmount: 0,
+        initialTotal: {{ $grandTotal }},
+
+        get finalTotal() {
+            return Math.max(0, this.initialTotal - this.discountAmount);
+        },
 
         get canSubmit() {
             if (!this.paymentMethod) return false;
             if (this.paymentMethod === 'cash') return true;
             if (this.paymentMethod === 'qris') {
-                // Cek apakah toko punya QRIS
                 const qrisAvailable = document.getElementById('qris-barcode-container') !== null;
                 if (!qrisAvailable) return false;
                 return this.proofUploaded;
             }
             return false;
+        },
+
+        applyVoucher() {
+            if (!this.promoInput) return;
+            this.checkingVoucher = true;
+            this.voucherMessage = '';
+
+            fetch('{{ route('buyer.checkout.check-voucher') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    code: this.promoInput
+                })
+            })
+            .then(res => res.json().then(data => ({ status: res.status, data })))
+            .then(({ status, data }) => {
+                this.checkingVoucher = false;
+                if (status === 200 && data.success) {
+                    this.voucherApplied = true;
+                    this.voucherSuccess = true;
+                    this.voucherMessage = data.message;
+                    this.appliedVoucherCode = this.promoInput.toUpperCase().trim();
+                    this.discountAmount = data.discount;
+                } else {
+                    this.voucherApplied = false;
+                    this.voucherSuccess = false;
+                    this.voucherMessage = data.message || 'Gagal menerapkan voucher.';
+                    this.discountAmount = 0;
+                    this.appliedVoucherCode = '';
+                }
+            })
+            .catch(err => {
+                this.checkingVoucher = false;
+                this.voucherApplied = false;
+                this.voucherSuccess = false;
+                this.voucherMessage = 'Terjadi kesalahan koneksi.';
+                this.discountAmount = 0;
+                this.appliedVoucherCode = '';
+            });
+        },
+
+        removeVoucher() {
+            this.promoInput = '';
+            this.voucherApplied = false;
+            this.voucherSuccess = false;
+            this.voucherMessage = '';
+            this.appliedVoucherCode = '';
+            this.discountAmount = 0;
+        },
+
+        formatRupiah(num) {
+            return new Intl.NumberFormat('id-ID').format(num);
         }
     };
 }

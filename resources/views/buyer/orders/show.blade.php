@@ -148,11 +148,21 @@
             <div class="border-t-2 border-dashed border-gray-100 my-6"></div>
 
             {{-- Total Summary --}}
+            @php
+                $discount = $order->discount_amount ?? 0;
+                $subtotal = $order->total_amount + $discount;
+            @endphp
             <div class="space-y-3">
                 <div class="flex justify-between text-sm">
                     <span class="text-gray-500 font-medium">Subtotal Pembelian</span>
-                    <span class="text-gray-900 font-bold">Rp {{ number_format($order->total_amount, 0, ',', '.') }}</span>
+                    <span class="text-gray-900 font-bold">Rp {{ number_format($subtotal, 0, ',', '.') }}</span>
                 </div>
+                @if($discount > 0)
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-500 font-medium">Potongan Voucher ({{ $order->voucher_code }})</span>
+                    <span class="text-green-600 font-bold">-Rp {{ number_format($discount, 0, ',', '.') }}</span>
+                </div>
+                @endif
                 <div class="flex justify-between text-sm">
                     <span class="text-gray-500 font-medium">Biaya Layanan</span>
                     <span class="text-gray-900 font-bold">Rp 0</span>

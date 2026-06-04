@@ -16,6 +16,8 @@ class Order extends Model
         'cancellation_reason',
         'pickup_deadline',
         'pickup_code',
+        'voucher_code',
+        'discount_amount',
     ];
 
     protected $casts = [

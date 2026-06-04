@@ -112,6 +112,13 @@ class BuyerController extends Controller
             ->withCount('reviews')
             ->findOrFail($id);
 
-        return view('buyer.store-show', compact('seller'));
+        $vouchers = \App\Models\Voucher::where('seller_id', $seller->id)
+            ->where('is_active', true)
+            ->where(function($q) {
+                $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+            })
+            ->get();
+
+        return view('buyer.store-show', compact('seller', 'vouchers'));
     }
 }
