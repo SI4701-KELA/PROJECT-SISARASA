@@ -18,9 +18,7 @@ use App\Http\Controllers\BuyerOrderController;
 use App\Http\Controllers\SellerVoucherController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return redirect()->route('login');
-});
+Route::get('/', [\App\Http\Controllers\LandingController::class, 'index'])->name('landing');
 
 Route::get('/dashboard', function () {
     $role = request()->user()->role;

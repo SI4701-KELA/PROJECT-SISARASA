@@ -28,11 +28,50 @@
 
 @section('content')
 <div class="max-w-3xl mx-auto py-4">
-    {{-- Success State Banner --}}
+    {{-- Status Banners --}}
     @if($order->status === 'dibatalkan')
     <div class="mb-6 bg-white border border-teal-500 rounded-xl p-4 text-center shadow-sm">
         <h3 class="text-teal-600 font-bold text-lg">Pesanan Berhasil di batalkan</h3>
     </div>
+    @elseif($order->status === 'diproses')
+    <div class="mb-6 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-xl shadow-sm text-sm text-center">
+        Pesanan sedang disiapkan. Estimasi waktu penyiapan: <span class="font-bold">15-20 Menit</span>
+    </div>
+    @elseif($order->status === 'siap_diambil' && $order->pickup_deadline)
+        @php
+            $deadlineIso = $order->pickup_deadline->timezone('Asia/Jakarta')->toIso8601String();
+            $deadlineTime = $order->pickup_deadline->timezone('Asia/Jakarta')->format('H:i');
+        @endphp
+        <div x-data="{
+            deadline: new Date('{{ $deadlineIso }}').getTime(),
+            now: new Date().getTime(),
+            get isExpired() {
+                return this.now >= this.deadline;
+            },
+            get timeLeft() {
+                return Math.max(0, Math.floor((this.deadline - this.now) / 1000));
+            },
+            init() {
+                setInterval(() => {
+                    this.now = new Date().getTime();
+                }, 1000);
+            },
+            formatTime() {
+                let t = this.timeLeft;
+                let h = Math.floor(t / 3600);
+                let m = Math.floor((t % 3600) / 60);
+                let s = t % 60;
+                return [h, m, s].map(v => v.toString().padStart(2, '0')).join(':');
+            }
+        }" class="text-center">
+            <div x-show="isExpired" style="display: none" class="mb-6 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl shadow-sm text-sm font-bold">
+                Batas waktu pengambilan telah terlewat.
+            </div>
+            <div x-show="!isExpired" style="display: none" class="mb-6 bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-xl shadow-sm text-sm">
+                Harap ambil pesanan Anda dalam waktu: <span class="font-bold text-red-600 font-mono text-base ml-1" x-text="formatTime()"></span>
+                <br><span class="text-xs text-gray-600">(Batas Maksimal: {{ $deadlineTime }} WIB)</span>
+            </div>
+        </div>
     @endif
 
     {{-- Back Link & Print Action (no-print) --}}
@@ -104,6 +143,30 @@
 
             {{-- Dotted Divider --}}
             <div class="border-t-2 border-dashed border-gray-100 my-6"></div>
+
+            @if($order->status === 'siap_diambil' && $order->pickup_code)
+                {{-- QR Code & Pickup Code Section --}}
+                <div class="mb-6 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-gray-50 to-slate-50 border border-gray-100 rounded-3xl shadow-inner text-center no-print">
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Tunjukkan QR Code ini ke Penjual</p>
+                    
+                    {{-- QR Code Box --}}
+                    <div class="bg-white p-4 rounded-2xl shadow-md border border-gray-100/60 flex items-center justify-center mb-3">
+                        <div id="qrcode-container" class="w-48 h-48 flex items-center justify-center bg-gray-50 rounded-xl overflow-hidden">
+                            <canvas id="qrcode-canvas" class="w-full h-full"></canvas>
+                        </div>
+                    </div>
+                    
+                    <p class="text-[10px] text-gray-400 font-bold mb-1.5 uppercase tracking-wide">Kode Unik Pengambilan</p>
+                    <div class="inline-flex items-center gap-2 px-5 py-1.5 bg-white rounded-xl border border-gray-100 shadow-sm">
+                        <span class="text-xl font-black text-gray-900 tracking-widest font-mono select-all uppercase">
+                            {{ $order->pickup_code }}
+                        </span>
+                    </div>
+                </div>
+
+                {{-- Dotted Divider --}}
+                <div class="border-t-2 border-dashed border-gray-100 my-6 no-print"></div>
+            @endif
 
             {{-- Seller Info --}}
             <div class="mb-6">
@@ -412,3 +475,23 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        @if($order->status === 'siap_diambil' && !empty($order->pickup_code))
+            if (document.getElementById('qrcode-canvas')) {
+                var qr = new QRious({
+                    element: document.getElementById('qrcode-canvas'),
+                    value: '{{ $order->pickup_code }}',
+                    size: 200,
+                    background: '#ffffff',
+                    foreground: '#0f172a',
+                    level: 'H'
+                });
+            }
+        @endif
+    });
+</script>
+@endpush
