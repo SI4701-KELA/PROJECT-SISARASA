@@ -51,7 +51,7 @@ class FavoriteController extends Controller
         $favoriteRecords = FavoriteStore::where('user_id', $userId)
             ->with(['seller' => function ($query) {
                 // withSum langsung di query — tidak perlu load seluruh products hanya untuk sum
-                $query->withSum('products.stock as total_surplus_sum', 'qty_surplus');
+                $query->withSum('stocks as total_surplus_sum', 'qty_surplus');
             }])
             ->latest()
             ->get();

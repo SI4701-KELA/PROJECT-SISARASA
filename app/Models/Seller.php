@@ -43,6 +43,14 @@ class Seller extends Model
     }
 
     /**
+     * Relasi ke seluruh stok dari produk-produk toko ini.
+     */
+    public function stocks()
+    {
+        return $this->hasManyThrough(Stock::class, Product::class);
+    }
+
+    /**
      * Relasi ke record favorit yang merujuk toko ini.
      */
     public function favoriteStores()
