@@ -255,6 +255,7 @@
                             {{-- Bintang 1 s.d. 5 --}}
                             <template x-for="i in 5">
                                 <button type="button" 
+                                        :id="'star-rating-' + i"
                                         @click="if(!isViewOnly) rating = i"
                                         @mouseover="if(!isViewOnly) hoverRating = i"
                                         @mouseleave="if(!isViewOnly) hoverRating = 0"

@@ -55,38 +55,49 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('messages', function (Blueprint $table) {
+            $table->dropForeign(['receiver_id']);
+            $table->dropForeign(['sender_id']);
             $table->dropIndex('idx_messages_receiver_unread');
             $table->dropIndex('idx_messages_conversation');
         });
 
         Schema::table('orders', function (Blueprint $table) {
+            $table->dropForeign(['seller_id']);
+            $table->dropForeign(['buyer_id']);
             $table->dropIndex('idx_orders_seller_status');
             $table->dropIndex('idx_orders_buyer_status');
             $table->dropIndex('idx_orders_pickup_code');
         });
 
         Schema::table('order_items', function (Blueprint $table) {
+            $table->dropForeign(['order_id']);
             $table->dropIndex('idx_order_items_surplus');
         });
 
         Schema::table('complaints', function (Blueprint $table) {
+            $table->dropForeign(['buyer_id']);
+            $table->dropForeign(['seller_id']);
             $table->dropIndex('idx_complaints_buyer_status');
             $table->dropIndex('idx_complaints_seller_status');
         });
 
         Schema::table('carts', function (Blueprint $table) {
+            $table->dropForeign(['buyer_id']);
             $table->dropIndex('idx_carts_buyer');
         });
 
         Schema::table('favorite_stores', function (Blueprint $table) {
+            $table->dropForeign(['user_id']);
             $table->dropIndex('idx_favorite_stores_user');
         });
 
         Schema::table('stocks', function (Blueprint $table) {
+            $table->dropForeign(['product_id']);
             $table->dropIndex('idx_stocks_product');
         });
 
         Schema::table('discounts', function (Blueprint $table) {
+            $table->dropForeign(['product_id']);
             $table->dropIndex('idx_discounts_product_active');
         });
 
