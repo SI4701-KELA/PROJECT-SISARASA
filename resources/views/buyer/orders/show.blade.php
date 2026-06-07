@@ -262,7 +262,7 @@
         $remainingSeconds = max(15 - $diffSeconds, 0);
     @endphp
 
-    @if($order->status === 'menunggu_verifikasi' && $remainingSeconds > 0)
+    @if(in_array($order->status, ['menunggu_verifikasi', 'diproses']) && $remainingSeconds > 0)
         <div
             x-data="{
                 timeLeft:    {{ $remainingSeconds }},

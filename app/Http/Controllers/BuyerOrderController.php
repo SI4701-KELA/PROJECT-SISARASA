@@ -78,8 +78,8 @@ class BuyerOrderController extends Controller
             ->with('items')
             ->firstOrFail();
 
-        // Security Guard: Tolak request jika status bukan 'menunggu_verifikasi' ATAU waktu 15 detik sudah habis
-        if ($order->status !== 'menunggu_verifikasi' || now()->diffInSeconds($order->created_at) > 15) {
+        // Security Guard: Tolak request jika status bukan 'menunggu_verifikasi'/'diproses' ATAU waktu 15 detik sudah habis
+        if (!in_array($order->status, ['menunggu_verifikasi', 'diproses']) || now()->diffInSeconds($order->created_at) > 15) {
             abort(400, 'Pesanan tidak dapat dibatalkan.');
         }
 
