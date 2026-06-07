@@ -132,7 +132,7 @@ class CheckoutController extends Controller
             }
 
             // Tentukan status pesanan
-            $status = 'menunggu_verifikasi';
+            $status = $paymentMethod === 'cash' ? 'diproses' : 'menunggu_verifikasi';
 
             // Hitung potongan voucher jika ada
             $discountAmount = 0;
@@ -214,7 +214,7 @@ class CheckoutController extends Controller
 
             DB::commit();
 
-            return redirect()->route('buyer.orders.show', $order->id)
+            return redirect()->route('buyer.checkout.success', $order->id)
                 ->with('success', 'Pesanan berhasil dibuat!');
 
         } catch (\Exception $e) {
