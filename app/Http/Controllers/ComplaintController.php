@@ -18,6 +18,16 @@ class ComplaintController extends Controller
         // TC-CMP-001: Hanya toko yang sudah approved yang bisa dikomplain
         abort_if($seller->verification_status !== 'approved', 403, 'Toko ini tidak dapat dikomplain.');
 
+        // TC-CMP-002: Buyer harus punya minimal 1 pesanan "Selesai" di toko ini
+        $hasOrder = \App\Models\Order::where('buyer_id', auth()->id())
+            ->where('seller_id', $seller->id)
+            ->where('status', 'selesai')
+            ->exists();
+
+        if (!$hasOrder) {
+            return redirect()->route('buyer.stores')->with('error', 'Anda tidak dapat mengajukan komplain karena tidak memiliki riwayat pesanan yang sudah selesai di toko ini.');
+        }
+
         // Cek apakah buyer sudah pernah mengajukan komplain yang masih aktif ke toko ini
         $existingComplaint = Complaint::where('seller_id', $seller->id)
             ->where('buyer_id', auth()->id())
