@@ -89,8 +89,8 @@ class Pbi7StockSyncDuskTest extends DuskTestCase
                 ->click('#payment-option-cash')
                 ->pause(500)
                 ->press('#btn-buat-pesanan')
-                ->waitForText('Pesanan Berhasil!')
-                ->assertSee('Pesanan Anda sedang diproses oleh toko.');
+                ->waitForText('Menunggu Verifikasi')
+                ->assertSee('sedang diverifikasi oleh toko.');
         });
 
         // Verifikasi database bahwa stok berkurang dari 10 menjadi 7

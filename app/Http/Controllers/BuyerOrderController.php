@@ -45,9 +45,11 @@ class BuyerOrderController extends Controller
             $statusCounts->get('dibatalkan', 0)
         );
 
-        return view('buyer.orders.index', compact(
+        return response()->view('buyer.orders.index', compact(
             'orders', 'tab', 'countAktif', 'countRiwayat'
-        ));
+        ))->header('Cache-Control', 'no-cache, no-store, max-age=0, must-revalidate')
+          ->header('Pragma', 'no-cache')
+          ->header('Expires', 'Sat, 01 Jan 2000 00:00:00 GMT');
     }
 
     /**
@@ -60,7 +62,10 @@ class BuyerOrderController extends Controller
             ->with(['seller.user', 'items.product'])
             ->firstOrFail();
 
-        return view('buyer.orders.show', compact('order'));
+        return response()->view('buyer.orders.show', compact('order'))
+            ->header('Cache-Control', 'no-cache, no-store, max-age=0, must-revalidate')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', 'Sat, 01 Jan 2000 00:00:00 GMT');
     }
     /**
      * Membatalkan pesanan oleh pembeli.

@@ -10,6 +10,26 @@ class TC131Test extends DuskTestCase
 
     public function test_login_seller_Katalog_produk(): void
     {
+        $user = \App\Models\User::firstOrCreate(
+            ['email' => 'uiop@gmail.com'],
+            [
+                'name' => 'Seller Uiop',
+                'role' => 'seller',
+                'password' => bcrypt('uiopuiop'),
+                'email_verified_at' => now(),
+            ]
+        );
+        \App\Models\Seller::firstOrCreate(
+            ['user_id' => $user->id],
+            [
+                'store_name' => 'Toko Uiop',
+                'address' => 'Jl. Test No. 123',
+                'latitude' => -6.9147,
+                'longitude' => 107.6098,
+                'verification_status' => 'approved',
+            ]
+        );
+
         $this->browse(function (Browser $browser) {
             $browser->visit('/login') 
                 ->waitFor('input[type="email"]', 5) 

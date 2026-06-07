@@ -200,7 +200,7 @@ class CheckoutTest extends TestCase
     // =========================================================================
     // TC-PAY-004: Menguji alur metode pembayaran Cash
     // =========================================================================
-    public function test_cash_payment_creates_order_with_diproses_status(): void
+    public function test_cash_payment_creates_order_with_menunggu_verifikasi_status(): void
     {
         $eco = $this->createEcosystem([
             'base_price' => 25000,
@@ -219,7 +219,7 @@ class CheckoutTest extends TestCase
         $order = Order::where('buyer_id', $eco['buyer']->id)->first();
         $this->assertNotNull($order);
         $this->assertEquals('cash', $order->payment_method);
-        $this->assertEquals('diproses', $order->status);
+        $this->assertEquals('menunggu_verifikasi', $order->status);
         $this->assertNull($order->payment_proof);
         $this->assertEquals(50000, $order->total_amount); // 25000 * 2
 
@@ -518,7 +518,7 @@ class CheckoutTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('#' . $order->id);
-        $response->assertSee('Diproses'); // Status cash = diproses
+        $response->assertSee('Menunggu Verifikasi'); // Status cash = menunggu_verifikasi
         $response->assertSee('cash');
         $response->assertSee('Rp 50.000'); // 25000 * 2
     }

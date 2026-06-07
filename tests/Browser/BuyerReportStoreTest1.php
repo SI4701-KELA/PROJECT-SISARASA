@@ -15,10 +15,13 @@ class BuyerReportStoreTest1 extends DuskTestCase
         $this->browse(function (Browser $browser) {
             $buyer = User::where('role', 'buyer')->first();
             $seller = Seller::where('verification_status', 'approved')->first();
+            $sellerUser = $seller->user;
+            $sellerUser->is_banned = false;
+            $sellerUser->save();
             \Illuminate\Support\Facades\DB::table('reports')->where('buyer_id', $buyer->id)->where('seller_id', $seller->id)->delete();
             $browser->loginAs($buyer)
                     ->visit('/buyer/store/' . $seller->id)
-                    ->press('Laporkan Toko Ini')
+                    ->click('#btn-laporkan-toko')
                     ->waitForText('Laporkan Toko') 
                     ->select('kategori', 'Kualitas Makanan Buruk')
                     ->type('deskripsi', 'Makanan yang saya terima dari toko ini ternyata sudah basi dan berbau.') 

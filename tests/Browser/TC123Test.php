@@ -10,6 +10,21 @@ class TC123Test extends DuskTestCase
 
     public function test_filter_spesifik_kategori(): void
     {
+        $buyer = \App\Models\User::firstOrCreate(
+            ['email' => 'qwer@gmail.com'],
+            [
+                'name' => 'Buyer QWER',
+                'role' => 'buyer',
+                'password' => bcrypt('qwerqwer'),
+                'email_verified_at' => now(),
+            ]
+        );
+
+        $categories = ['Makanan Berat', 'Cemilan & Pastry', 'Minuman', 'Sayuran & Buah'];
+        foreach ($categories as $category) {
+            \App\Models\Category::firstOrCreate(['name' => $category]);
+        }
+
         $this->browse(function (Browser $browser) {
             
             // 1. Login

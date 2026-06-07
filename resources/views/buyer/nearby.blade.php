@@ -185,6 +185,12 @@
                             const lng = position.coords.longitude;
                             
                             const url = new URL(window.location.href);
+                            
+                            // Prevent infinite reload
+                            if (url.searchParams.get('lat') == lat && url.searchParams.get('lng') == lng) {
+                                return;
+                            }
+                            
                             url.searchParams.set('lat', lat);
                             url.searchParams.set('lng', lng);
                             
