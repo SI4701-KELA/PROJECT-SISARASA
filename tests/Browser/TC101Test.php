@@ -12,6 +12,16 @@ class TC101Test extends DuskTestCase
      */
     public function test_login_scenario(): void
     {
+        $buyer = \App\Models\User::firstOrCreate(
+            ['email' => 'qwer@gmail.com'],
+            [
+                'name' => 'Buyer QWER',
+                'role' => 'buyer',
+                'password' => bcrypt('qwerqwer'),
+                'email_verified_at' => now(),
+            ]
+        );
+
         $this->browse(function (Browser $browser) {
             $browser->visit('/login') 
                 ->waitFor('input[type="email"]', 5) 

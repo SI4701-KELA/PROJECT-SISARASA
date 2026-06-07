@@ -132,7 +132,7 @@ class CheckoutController extends Controller
             }
 
             // Tentukan status pesanan
-            $status = $paymentMethod === 'cash' ? 'diproses' : 'menunggu_verifikasi';
+            $status = 'menunggu_verifikasi';
 
             // Hitung potongan voucher jika ada
             $discountAmount = 0;

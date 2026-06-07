@@ -107,10 +107,9 @@ class Pbi33VoucherCheckoutDuskTest extends DuskTestCase
                 ->assertSee('Potongan Voucher')
                 ->assertSee('Rp 36.000')
                 // Selesaikan checkout
-                ->click('#payment-option-cash')
-                ->pause(500)
-                ->press('#btn-buat-pesanan')
-                ->waitForText('Pesanan Berhasil!')
+                ->radio('payment_method', 'cash')
+                ->click('#btn-buat-pesanan')
+                ->waitForText('Menunggu Verifikasi')
                 ->assertSee('Rp 36.000');
         });
 

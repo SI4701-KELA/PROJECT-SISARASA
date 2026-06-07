@@ -6,8 +6,11 @@ use App\Models\User;
 use Laravel\Dusk\Browser;
 use Tests\DuskTestCase;
 
+use Illuminate\Foundation\Testing\DatabaseTruncation;
+
 class TC113Test extends DuskTestCase
 {
+    use DatabaseTruncation;
     /**
      * TC-11.3: Menguji fungsionalitas Highlight pada toko terdekat.
      * 
@@ -25,6 +28,29 @@ class TC113Test extends DuskTestCase
      */
     public function test_highlight_toko_terdekat(): void
     {
+        // Forcefully create 2 sellers: one close (< 5 KM) and one far (> 5 KM but < 50 KM)
+        $sellersData = [
+            ['email' => 'toko1@mock.com', 'name' => 'Toko 1 Dekat', 'lat' => -6.9147, 'lng' => 107.6098], // 0.0 KM
+            ['email' => 'toko2@mock.com', 'name' => 'Toko 2 Jauh', 'lat' => -6.8500, 'lng' => 107.5000],  // ~14.1 KM
+        ];
+
+        foreach ($sellersData as $data) {
+            $sellerUser = User::firstOrCreate(
+                ['email' => $data['email']],
+                ['name' => $data['name'], 'password' => bcrypt('password123'), 'role' => 'seller', 'email_verified_at' => now(), 'is_banned' => false]
+            );
+            \App\Models\Seller::firstOrCreate(
+                ['user_id' => $sellerUser->id],
+                [
+                    'store_name' => $data['name'],
+                    'address' => 'Mock Address',
+                    'latitude' => $data['lat'],
+                    'longitude' => $data['lng'],
+                    'verification_status' => 'approved',
+                ]
+            );
+        }
+
         $buyer = User::where('role', 'buyer')->first();
         if (!$buyer) {
             $buyer = User::create([

@@ -10,6 +10,16 @@ class TC121Test extends DuskTestCase
 
     public function test_default_kategori_semua_makanan(): void
     {
+        $buyer = \App\Models\User::firstOrCreate(
+            ['email' => 'qwer@gmail.com'],
+            [
+                'name' => 'Buyer QWER',
+                'role' => 'buyer',
+                'password' => bcrypt('qwerqwer'),
+                'email_verified_at' => now(),
+            ]
+        );
+
         $this->browse(function (Browser $browser) {
             
             // 1 & 2. Login sebagai pembeli dan masuk ke Dashboard

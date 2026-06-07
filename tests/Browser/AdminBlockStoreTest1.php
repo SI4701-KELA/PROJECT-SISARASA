@@ -14,9 +14,22 @@ class AdminBlockStoreTest1 extends DuskTestCase
     public function test_admin_can_reject_report(): void
     {
         $this->browse(function (Browser $browser) {
-            $admin = User::where('role', 'admin')->first();
-            $buyer = User::where('role', 'buyer')->first();
-            $seller = Seller::first();   
+            $admin = User::firstOrCreate(
+                ['email' => 'admin_block@example.com'],
+                ['name' => 'Admin Test', 'role' => 'admin', 'password' => bcrypt('password')]
+            );
+            $buyer = User::firstOrCreate(
+                ['email' => 'buyer_block@example.com'],
+                ['name' => 'Buyer Test', 'role' => 'buyer', 'password' => bcrypt('password')]
+            );
+            $sellerUser = User::firstOrCreate(
+                ['email' => 'seller_block@example.com'],
+                ['name' => 'Seller Test', 'role' => 'seller', 'password' => bcrypt('password')]
+            );
+            $seller = Seller::firstOrCreate(
+                ['user_id' => $sellerUser->id],
+                ['store_name' => 'Toko Block', 'address' => 'Jl. Test', 'latitude' => 0, 'longitude' => 0, 'verification_status' => 'approved']
+            );
             DB::table('reports')->delete();   
             Report::create([
                 'buyer_id' => $buyer->id,
@@ -29,6 +42,7 @@ class AdminBlockStoreTest1 extends DuskTestCase
             $browser->loginAs($admin)
                     ->visit('/admin/reports')
                     ->waitForText('Daftar Laporan Pembeli')
+                    ->pause(1000)
                     ->press('Tindak Lanjuti')
                     ->waitForText('Pilih tindakan untuk toko')
                     ->pause(1000)
