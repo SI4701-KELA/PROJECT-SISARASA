@@ -5,8 +5,8 @@
 @section('content')
 <div class="max-w-2xl mx-auto text-center py-8">
     {{-- Success Icon --}}
-    <div class="w-24 h-24 rounded-full mx-auto mb-6 flex items-center justify-center {{ $order->status === 'diproses' ? 'bg-green-50' : ($order->status === 'dibatalkan' ? 'bg-red-50' : 'bg-orange-50') }}">
-        @if($order->status === 'diproses')
+    <div class="w-24 h-24 rounded-full mx-auto mb-6 flex items-center justify-center {{ in_array($order->status, ['diproses', 'siap_diambil']) ? 'bg-green-50' : ($order->status === 'dibatalkan' ? 'bg-red-50' : 'bg-orange-50') }}">
+        @if(in_array($order->status, ['diproses', 'siap_diambil']))
             <svg class="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
         @elseif($order->status === 'dibatalkan')
             <svg class="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -17,8 +17,11 @@
 
     {{-- Title --}}
     @if($order->status === 'diproses')
-        <h1 class="text-3xl font-black text-gray-900 tracking-tight mb-2">Pesanan Berhasil!</h1>
+        <h1 class="text-3xl font-black text-gray-900 tracking-tight mb-2">Pesanan Diproses!</h1>
         <p class="text-gray-500 font-medium mb-8">Pesanan Anda sedang diproses oleh toko.</p>
+    @elseif($order->status === 'siap_diambil')
+        <h1 class="text-3xl font-black text-gray-900 tracking-tight mb-2">Pesanan Siap Diambil!</h1>
+        <p class="text-gray-500 font-medium mb-8">Silakan ambil pesanan Anda di toko.</p>
     @elseif($order->status === 'dibatalkan')
         <h1 class="text-3xl font-black text-gray-900 tracking-tight mb-2">Pesanan Dibatalkan</h1>
         <p class="text-gray-500 font-medium mb-8">Pesanan ini telah dibatalkan.</p>
@@ -38,6 +41,8 @@
                 <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Status</p>
                 @if($order->status === 'diproses')
                     <span class="inline-flex px-3 py-1 rounded-lg bg-green-100 text-green-700 text-xs font-bold uppercase tracking-wider" id="order-status">Diproses</span>
+                @elseif($order->status === 'siap_diambil')
+                    <span class="inline-flex px-3 py-1 rounded-lg bg-blue-100 text-blue-700 text-xs font-bold uppercase tracking-wider" id="order-status">Siap Diambil</span>
                 @elseif($order->status === 'dibatalkan')
                     <span class="inline-flex px-3 py-1 rounded-lg bg-red-100 text-red-700 text-xs font-bold uppercase tracking-wider" id="order-status">Dibatalkan</span>
                 @else
@@ -366,6 +371,13 @@
                 foreground: '#0f172a',
                 level: 'H'
             });
+        @endif
+
+        @if(in_array($order->status, ['menunggu_verifikasi', 'diproses', 'siap_diambil']))
+            // Auto refresh to check status updates every 30 seconds
+            setTimeout(function() {
+                window.location.reload();
+            }, 30000);
         @endif
     });
 </script>

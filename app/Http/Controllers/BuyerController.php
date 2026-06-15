@@ -25,7 +25,7 @@ class BuyerController extends Controller
             $query->where('category_id', $categoryId);
         }
 
-        $products = $query->get();
+        $products = $query->paginate(12);
 
         return view('buyer.menu', compact('categories', 'categoryId', 'products'));
     }
@@ -60,6 +60,9 @@ class BuyerController extends Controller
                     $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
                     $seller->distance = round($earthRadius * $c, 2);
                     return $seller;
+                })
+                ->filter(function ($seller) {
+                    return $seller->distance <= 10; // Hanya tampilkan toko dalam radius 10 KM
                 })
                 ->sortBy('distance')
                 ->values();

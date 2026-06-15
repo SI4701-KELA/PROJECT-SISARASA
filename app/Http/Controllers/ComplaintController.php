@@ -25,7 +25,7 @@ class ComplaintController extends Controller
             ->exists();
 
         if (!$hasOrder) {
-            return redirect()->route('buyer.stores')->with('error', 'Anda tidak dapat mengajukan komplain karena tidak memiliki riwayat pesanan yang sudah selesai di toko ini.');
+            return redirect()->route('buyer.store.show', $seller->id)->with('error', 'Anda tidak dapat mengajukan komplain karena tidak memiliki riwayat pesanan yang sudah selesai di toko ini.');
         }
 
         // Cek apakah buyer sudah pernah mengajukan komplain yang masih aktif ke toko ini
