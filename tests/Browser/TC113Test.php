@@ -3,148 +3,109 @@
 namespace Tests\Browser;
 
 use App\Models\User;
+use App\Models\Seller;
+use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Laravel\Dusk\Browser;
 use Tests\DuskTestCase;
-
-use Illuminate\Foundation\Testing\DatabaseTruncation;
 
 class TC113Test extends DuskTestCase
 {
     use DatabaseTruncation;
+
     /**
-     * TC-11.3: Menguji fungsionalitas Highlight pada toko terdekat.
-     * 
-     * Skenario:
-     * 1. Selesaikan langkah pencarian Toko Terdekat.
-     * 2. Periksa desain kartu toko pada urutan pertama (paling atas).
-     * 
-     * Expected: Toko di urutan pertama memiliki elemen UI yang berbeda/menonjol
-     * (badge "Super Dekat", border oranye) dibandingkan toko di bawahnya.
-     * 
-     * CATATAN TEKNIS:
-     * Chrome headless tidak mendukung pop-up izin Geolocation, jadi kita
-     * langsung kunjungi /buyer/nearby?lat=...&lng=... dengan koordinat palsu
-     * yang sangat dekat dengan Warung Nasi Budi (lat=-6.9147, lng=107.6098).
+     * Set up user buyer dan data pendukung.
+     * Tidak membuat seller aktif yang dapat tampil pada halaman Toko Terdekat.
+     * Kita buat seller dengan status pending agar sistem tetap memiliki data seller
+     * tetapi tidak ditampilkan pada halaman Toko Terdekat (karena belum approved).
      */
-    public function test_highlight_toko_terdekat(): void
+    private function setupEcosystem()
     {
-        // Forcefully create 2 sellers: one close (< 5 KM) and one far (> 5 KM but < 50 KM)
-        $sellersData = [
-            ['email' => 'toko1@mock.com', 'name' => 'Toko 1 Dekat', 'lat' => -6.9147, 'lng' => 107.6098], // 0.0 KM
-            ['email' => 'toko2@mock.com', 'name' => 'Toko 2 Jauh', 'lat' => -6.8500, 'lng' => 107.5000],  // ~14.1 KM
-        ];
-
-        foreach ($sellersData as $data) {
-            $sellerUser = User::firstOrCreate(
-                ['email' => $data['email']],
-                ['name' => $data['name'], 'password' => bcrypt('password123'), 'role' => 'seller', 'email_verified_at' => now(), 'is_banned' => false]
-            );
-            \App\Models\Seller::firstOrCreate(
-                ['user_id' => $sellerUser->id],
-                [
-                    'store_name' => $data['name'],
-                    'address' => 'Mock Address',
-                    'latitude' => $data['lat'],
-                    'longitude' => $data['lng'],
-                    'verification_status' => 'approved',
-                ]
-            );
-        }
-
-        $buyer = User::where('role', 'buyer')->first();
-        if (!$buyer) {
-            $buyer = User::create([
-                'name' => 'Test Buyer',
-                'email' => 'testbuyer@gmail.com',
-                'password' => bcrypt('password123'),
+        // 1. Buat data user Buyer
+        $buyer = User::firstOrCreate(
+            ['email' => 'buyer_tc113@test.com'],
+            [
+                'name' => 'Buyer TC113',
                 'role' => 'buyer',
+                'password' => bcrypt('password123'),
                 'email_verified_at' => now(),
+            ]
+        );
+
+        // 2. Buat data Seller dengan status pending (tidak akan tampil)
+        $sellerUserPending = User::firstOrCreate(
+            ['email' => 'toko_pending@test.com'],
+            [
+                'name' => 'Seller Pending',
+                'role' => 'seller',
+                'password' => bcrypt('password123'),
+                'email_verified_at' => now(),
+            ]
+        );
+        Seller::firstOrCreate(
+            ['user_id' => $sellerUserPending->id],
+            [
+                'store_name' => 'Toko Pending',
+                'address' => 'Jl. Toko Pending',
+                'latitude' => -6.9147,
+                'longitude' => 107.6098,
+                'verification_status' => 'pending', // status pending agar tidak lolos filter approved
+            ]
+        );
+
+        return compact('buyer');
+    }
+
+    /**
+     * TC-11.3: Menguji tampilan saat tidak ada UMKM yang tersedia (Empty State).
+     */
+    public function test_tampilan_empty_state_saat_tidak_ada_umkm_aktif(): void
+    {
+        $eco = $this->setupEcosystem();
+
+        $this->browse(function (Browser $browser) use ($eco) {
+            // Gunakan Chromium send_command untuk memaksa geolocation mengembalikan koordinat sukses di setiap page load
+            $browser->driver->executeCustomCommand('/session/:sessionId/chromium/send_command_and_get_result', 'POST', [
+                'cmd' => 'Page.addScriptToEvaluateOnNewDocument',
+                'params' => [
+                    'source' => '
+                        Object.defineProperty(navigator, "geolocation", {
+                            value: {
+                                getCurrentPosition: function(success, error, options) {
+                                    success({
+                                        coords: {
+                                            latitude: -6.9147,
+                                            longitude: 107.6098,
+                                            accuracy: 100
+                                        }
+                                    });
+                                }
+                            },
+                            writable: true
+                        });
+                    '
+                ]
             ]);
-        }
 
-        $this->browse(function (Browser $browser) use ($buyer) {
-            // 1. Login otomatis sebagai pembeli
-            $browser->loginAs($buyer)
+            // Langkah 1 & 2: Login dan buka halaman Toko Terdekat
+            $browser->loginAs($eco['buyer'])
+                ->visit('/buyer/nearby')
+                // Langkah 3: Tunggu proses pencarian toko selesai
+                ->waitForText('Titik Lokasi Anda Ditemukan')
+                ->assertPathIs('/buyer/nearby');
 
-                // 2. Kunjungi halaman Toko Terdekat dengan koordinat palsu
-                //    Koordinat ini sangat dekat dengan Warung Nasi Budi (-6.9147, 107.6098)
-                //    sehingga toko tersebut muncul pertama dengan jarak ≈ 0 KM (< 5 KM)
-                ->visit('/buyer/nearby?lat=-6.9150&lng=107.6100')
-                ->pause(2000)
-                
-                // 3. Pastikan lokasi berhasil ditemukan
-                ->assertSee('Titik Lokasi Anda Ditemukan');
+            // Langkah 4 & Expected Result:
+            // 1. Sistem tidak mengalami error / crash
+            // 2. Teks Empty State tampil
+            $browser->assertSee('Tidak Ada Toko Terdekat');
 
-            // =============================================================
-            // 4. VALIDASI: Badge "Super Dekat" ada di halaman
-            // =============================================================
-            // Blade menggunakan CSS `uppercase`, sehingga teks tampil "SUPER DEKAT".
-            // Kita cek keberadaan badge via HTML source karena assertSee mencocokkan
-            // teks visual (yang sudah di-uppercase oleh CSS text-transform).
-            $hasBadge = $browser->script(
-                "return document.body.innerHTML.includes('Super Dekat')"
-            );
-            $this->assertTrue(
-                $hasBadge[0],
-                'Halaman harus menampilkan badge "Super Dekat" untuk toko terdekat.'
-            );
+            // 3. Grid container daftar toko tidak muncul
+            $browser->assertMissing('div.grid');
 
-            // =============================================================
-            // 5. VALIDASI: Kartu pertama punya class HIGHLIGHT (border oranye)
-            // =============================================================
-            $firstCardClasses = $browser->script(
-                "return document.querySelector('.grid > div:first-child').className"
-            );
-            
-            // Kartu pertama harus memiliki border-orange-400 (highlight toko terdekat)
-            $this->assertStringContainsString(
-                'border-orange-400',
-                $firstCardClasses[0],
-                'Kartu toko pertama (terdekat) harus memiliki border oranye sebagai highlight.'
-            );
+            // 4. Nama toko pending tidak muncul
+            $browser->assertDontSee('Toko Pending');
 
-            // Kartu pertama harus memiliki ring-4 (efek glow oranye)
-            $this->assertStringContainsString(
-                'ring-4',
-                $firstCardClasses[0],
-                'Kartu toko pertama harus memiliki ring oranye sebagai pembeda visual.'
-            );
-
-            // =============================================================
-            // 6. VALIDASI: Header kartu pertama pakai gradient (menonjol)
-            // =============================================================
-            $firstHeaderClasses = $browser->script(
-                "return document.querySelector('.grid > div:first-child > div:first-child').className"
-            );
-            $this->assertStringContainsString(
-                'bg-gradient-to-r',
-                $firstHeaderClasses[0],
-                'Header kartu pertama harus menggunakan gradient sebagai highlight.'
-            );
-
-            // =============================================================
-            // 7. VALIDASI PEMBANDING: Jika ada kartu kedua, pastikan BERBEDA
-            // =============================================================
-            $totalCards = $browser->script(
-                "return document.querySelectorAll('.grid > div').length"
-            );
-
-            if ($totalCards[0] > 1) {
-                $secondCardClasses = $browser->script(
-                    "return document.querySelector('.grid > div:nth-child(2)').className"
-                );
-
-                // Kartu kedua TIDAK punya border-orange-400 (kecuali jaraknya juga < 5 KM)
-                // Minimal kita buktikan class-nya berbeda dari kartu pertama
-                $this->assertNotEquals(
-                    $firstCardClasses[0],
-                    $secondCardClasses[0],
-                    'Kartu toko pertama harus memiliki styling yang BERBEDA dari kartu kedua.'
-                );
-            }
-
-            // Pastikan jarak dalam format KM ditampilkan
-            $browser->assertSee('KM');
+            // 5. Tidak ada tombol "Kunjungi Toko" (karena tidak ada toko yang tampil)
+            $browser->assertDontSee('Kunjungi Toko');
         });
     }
 }

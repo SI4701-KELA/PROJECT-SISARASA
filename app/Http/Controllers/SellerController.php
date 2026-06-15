@@ -104,9 +104,10 @@ class SellerController extends Controller
             'open_time'     => 'required',
             'discount_time' => 'required',
             'close_time'    => 'required',
-            'latitude'      => 'nullable|numeric',
-            'longitude'     => 'nullable|numeric',
+            'latitude'      => 'required|numeric|between:-90,90',
+            'longitude'     => 'required|numeric|between:-180,180',
             'store_photo'   => 'nullable|image',
+            'qris_image'    => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ]);
 
         $seller = Seller::where('user_id', $request->user()->id)->first();
@@ -118,7 +119,15 @@ class SellerController extends Controller
                 Storage::disk('public')->delete($seller->store_photo);
             }
             $path = $request->file('store_photo')->store('store_photos', 'public');
-            $photoPart = ['store_photo' => $path];
+            $photoPart['store_photo'] = $path;
+        }
+
+        if ($request->hasFile('qris_image')) {
+            if ($seller && $seller->qris_image) {
+                Storage::disk('public')->delete($seller->qris_image);
+            }
+            $path = $request->file('qris_image')->store('qris_images', 'public');
+            $photoPart['qris_image'] = $path;
         }
 
         // --- Seller APPROVED: karantina perubahan data toko ke pending queue ---
@@ -137,9 +146,14 @@ class SellerController extends Controller
 
             $seller->pending_profile_updates = $pendingData;
 
-            // Foto tetap langsung disimpan
+            // Foto & QRIS tetap langsung disimpan
             if (!empty($photoPart)) {
-                $seller->store_photo = $photoPart['store_photo'];
+                if (isset($photoPart['store_photo'])) {
+                    $seller->store_photo = $photoPart['store_photo'];
+                }
+                if (isset($photoPart['qris_image'])) {
+                    $seller->qris_image = $photoPart['qris_image'];
+                }
             }
 
             $seller->save();
@@ -149,11 +163,16 @@ class SellerController extends Controller
         }
 
         // --- Seller PENDING / REJECTED: simpan langsung (data belum ter-approve) ---
-        $data = $request->except(['store_photo']);
+        $data = $request->except(['store_photo', 'qris_image']);
         $data['user_id'] = $request->user()->id;
 
         if (!empty($photoPart)) {
-            $data['store_photo'] = $photoPart['store_photo'];
+            if (isset($photoPart['store_photo'])) {
+                $data['store_photo'] = $photoPart['store_photo'];
+            }
+            if (isset($photoPart['qris_image'])) {
+                $data['qris_image'] = $photoPart['qris_image'];
+            }
         }
 
         if ($seller) {

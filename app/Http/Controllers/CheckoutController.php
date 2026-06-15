@@ -235,6 +235,11 @@ class CheckoutController extends Controller
             ->with(['items.product', 'seller'])
             ->firstOrFail();
 
+        // Redirect ke halaman detail pesanan (invoice) jika pesanan sudah selesai
+        if ($order->status === 'selesai') {
+            return redirect()->route('buyer.orders.show', $order->id);
+        }
+
         return view('buyer.checkout-success', compact('order'));
     }
 

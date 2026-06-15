@@ -2,79 +2,126 @@
 
 namespace Tests\Browser;
 
+use App\Models\User;
+use App\Models\Seller;
+use App\Models\Category;
+use App\Models\Product;
+use App\Models\Stock;
+use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Laravel\Dusk\Browser;
 use Tests\DuskTestCase;
 
 class TC132Test extends DuskTestCase
 {
+    use DatabaseTruncation;
 
-    public function test_login_seller_Katalog_produk_diskon(): void
+    /**
+     * Setup ekosistem data uji:
+     * - Buyer
+     * - Seller Aktif (approved)
+     * - Kategori "Makanan"
+     * - Seluruh produk aktif adalah Reguler (tanpa discount):
+     *   * "Nasi Goreng", "Ayam Bakar", "Mie Goreng"
+     */
+    private function setupEcosystem()
     {
-        $user = \App\Models\User::firstOrCreate(
-            ['email' => 'uiop@gmail.com'],
+        // 1. Buat Buyer
+        $buyer = User::firstOrCreate(
+            ['email' => 'buyer_tc132@test.com'],
             [
-                'name' => 'Seller Uiop',
-                'role' => 'seller',
-                'password' => bcrypt('uiopuiop'),
+                'name' => 'Buyer TC132',
+                'role' => 'buyer',
+                'password' => bcrypt('password123'),
                 'email_verified_at' => now(),
             ]
         );
-        $seller = \App\Models\Seller::firstOrCreate(
-            ['user_id' => $user->id],
+
+        // 2. Buat Seller Aktif (Approved)
+        $sellerUserActive = User::firstOrCreate(
+            ['email' => 'seller_tc132_active@test.com'],
             [
-                'store_name' => 'Toko Uiop',
-                'address' => 'Jl. Test No. 123',
+                'name' => 'Seller TC132 Active',
+                'role' => 'seller',
+                'password' => bcrypt('password123'),
+                'email_verified_at' => now(),
+            ]
+        );
+        $sellerActive = Seller::firstOrCreate(
+            ['user_id' => $sellerUserActive->id],
+            [
+                'store_name' => 'Toko Aktif TC132',
+                'address' => 'Jl. Aktif No. 132',
                 'latitude' => -6.9147,
                 'longitude' => 107.6098,
                 'verification_status' => 'approved',
             ]
         );
 
-        $category = \App\Models\Category::firstOrCreate(['name' => 'Makanan Berat']);
-        
-        $product1 = \App\Models\Product::create([
-            'seller_id' => $seller->id,
-            'category_id' => $category->id,
-            'name' => 'Produk Dengan Diskon',
-            'description' => 'Dummy desc',
-            'base_price' => 20000,
-            'image' => 'dummy.jpg',
-        ]);
-        \App\Models\Stock::create(['product_id' => $product1->id, 'qty_reg' => 10, 'qty_surplus' => 5]);
-        \App\Models\Discount::create([
-            'product_id' => $product1->id, 
-            'discount_price' => 10000, 
-            'is_active' => true, 
-            'start_time' => now()->subHour()->format('H:i'), 
-            'end_time' => now()->addHours(2)->format('H:i')
-        ]);
+        // 3. Buat Kategori
+        $catMakanan = Category::firstOrCreate(['name' => 'Makanan']);
 
-        $product2 = \App\Models\Product::create([
-            'seller_id' => $seller->id,
-            'category_id' => $category->id,
-            'name' => 'Produk Tanpa Diskon',
-            'description' => 'Dummy desc',
+        // 4. Buat Produk Reguler
+        $nasigoreng = Product::create([
+            'seller_id' => $sellerActive->id,
+            'category_id' => $catMakanan->id,
+            'name' => 'Nasi Goreng',
+            'description' => 'Nasi Goreng Reguler',
+            'base_price' => 12000,
+            'image' => 'default.jpg',
+        ]);
+        Stock::create(['product_id' => $nasigoreng->id, 'qty_reg' => 10]);
+
+        $ayambakar = Product::create([
+            'seller_id' => $sellerActive->id,
+            'category_id' => $catMakanan->id,
+            'name' => 'Ayam Bakar',
+            'description' => 'Ayam Bakar Reguler',
             'base_price' => 15000,
-            'image' => 'dummy.jpg',
+            'image' => 'default.jpg',
         ]);
-        \App\Models\Stock::create(['product_id' => $product2->id, 'qty_reg' => 10, 'qty_surplus' => 5]);
+        Stock::create(['product_id' => $ayambakar->id, 'qty_reg' => 10]);
 
-        $this->browse(function (Browser $browser) {
-            $browser->visit('/login') 
-                ->waitFor('input[type="email"]', 5) 
-                ->type('input[type="email"]', 'uiop@gmail.com') 
-                ->type('input[type="password"]', 'uiopuiop') 
-                ->press('Login') 
-                ->pause(2000)
-                ->assertPathIs('/seller/profile')
-                
-                ->clickLink('Katalog Produk') 
-                ->pause(3000)
-                ->assertPathIs('/seller/products')
-                ->assertSee('Matikan Diskon')
-                ->assertSee('Aktifkan Diskon');
+        $miegoreng = Product::create([
+            'seller_id' => $sellerActive->id,
+            'category_id' => $catMakanan->id,
+            'name' => 'Mie Goreng',
+            'description' => 'Mie Goreng Reguler',
+            'base_price' => 10000,
+            'image' => 'default.jpg',
+        ]);
+        Stock::create(['product_id' => $miegoreng->id, 'qty_reg' => 10]);
 
+        return compact('buyer');
+    }
 
+    /**
+     * TC-13.2: Menguji tampilan produk ketika seluruh produk seller berstatus Reguler.
+     */
+    public function test_tampilan_produk_reguler_tanpa_promo(): void
+    {
+        $eco = $this->setupEcosystem();
+
+        $this->browse(function (Browser $browser) use ($eco) {
+            // Langkah 1: Login dan buka halaman Daftar Menu
+            $browser->loginAs($eco['buyer'])
+                ->visit('/buyer/menu')
+                ->waitForText('Katalog Menu Sisa Rasa')
+                ->assertPathIs('/buyer/menu');
+
+            // Langkah 2 & Expected Result:
+            // 1. Semua produk tampil sebagai Reguler
+            $browser->assertSee('Nasi Goreng')
+                ->assertSee('Ayam Bakar')
+                ->assertSee('Mie Goreng');
+
+            // 2. Tidak terdapat badge promo / diskon
+            $browser->assertMissing('.promo-badge')
+                ->assertDontSee('Promo')
+                ->pause(5000)
+                ->assertDontSee('Diskon');
+
+            // 3. Elemen harga coret tidak muncul
+            $browser->assertMissing('.harga-coret');
         });
     }
 }

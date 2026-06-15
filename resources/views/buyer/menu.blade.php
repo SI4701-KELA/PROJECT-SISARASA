@@ -67,7 +67,7 @@
                         {{-- Promo Badge --}}
                         @if($activeDiscount)
                             <div class="absolute top-3 right-3">
-                                <span class="px-2 py-1 bg-red-500 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg shadow-sm">PROMO</span>
+                                <span class="promo-badge px-2 py-1 bg-red-500 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg shadow-sm">PROMO</span>
                             </div>
                         @endif
                     </div>
@@ -83,7 +83,7 @@
                         <div class="flex items-end justify-between mb-4">
                             <div class="flex flex-col justify-end">
                                 @if($activeDiscount)
-                                    <p class="text-gray-400 text-xs font-medium line-through">Rp {{ number_format($product->base_price, 0, ',', '.') }}</p>
+                                    <p class="harga-coret text-gray-400 text-xs font-medium line-through">Rp {{ number_format($product->base_price, 0, ',', '.') }}</p>
                                     <p class="text-[#c04b36] font-extrabold text-base">Rp {{ number_format($activeDiscount->discount_price, 0, ',', '.') }}</p>
                                 @else
                                     <p class="text-gray-900 font-extrabold text-base">Rp {{ number_format($product->base_price, 0, ',', '.') }}</p>
@@ -170,6 +170,9 @@
                     </div>
                 </div>
             @endforeach
+        </div>
+        <div class="mt-8">
+            {{ $products->appends(['category_id' => $categoryId])->links() }}
         </div>
     @endif
 </div>

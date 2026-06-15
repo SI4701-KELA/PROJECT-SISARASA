@@ -2,79 +2,145 @@
 
 namespace Tests\Browser;
 
+use App\Models\User;
+use App\Models\Seller;
+use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Laravel\Dusk\Browser;
 use Tests\DuskTestCase;
 
 class TC112Test extends DuskTestCase
 {
+    use DatabaseTruncation;
+
     /**
-     * TC-11.1: Menguji akurasi pengurutan data jarak (Sorting).
-     * Skenario: Memastikan toko terdekat (<= 5 KM) muncul dan memiliki label "Super Dekat".
+     * Set up user buyer dan 3 seller:
+     * - Toko Dekat A: ~0.3 KM (lat: -6.9147, lng: 107.6125)
+     * - Toko Dekat B: ~1.9 KM (lat: -6.9147, lng: 107.6270)
+     * - Toko Sangat Jauh: ~50.0 KM (lat: -6.9147, lng: 108.0628)
      */
-    public function test_akurasi_pengurutan_jarak(): void
+    private function setupEcosystem()
     {
-        // Forcefully create 4 sellers with varying distances within 50 KM
-        $sellersData = [
-            ['email' => 'toko1@mock.com', 'name' => 'Toko 1', 'lat' => -6.9147, 'lng' => 107.6098], // 0.0 KM
-            ['email' => 'toko2@mock.com', 'name' => 'Toko 2', 'lat' => -6.9170, 'lng' => 107.6090], // ~0.3 KM
-            ['email' => 'toko3@mock.com', 'name' => 'Toko 3', 'lat' => -6.9000, 'lng' => 107.6000], // ~1.9 KM
-            ['email' => 'toko4@mock.com', 'name' => 'Toko 4', 'lat' => -6.8500, 'lng' => 107.5000], // ~14.1 KM
-        ];
-
-        foreach ($sellersData as $data) {
-            $sellerUser = \App\Models\User::firstOrCreate(
-                ['email' => $data['email']],
-                ['name' => $data['name'], 'password' => bcrypt('password123'), 'role' => 'seller', 'email_verified_at' => now(), 'is_banned' => false]
-            );
-            \App\Models\Seller::firstOrCreate(
-                ['user_id' => $sellerUser->id],
-                [
-                    'store_name' => $data['name'],
-                    'address' => 'Mock Address',
-                    'latitude' => $data['lat'],
-                    'longitude' => $data['lng'],
-                    'verification_status' => 'approved',
-                ]
-            );
-        }
-
-        $buyer = \App\Models\User::firstOrCreate(
-            ['email' => 'qwer@gmail.com'],
+        // 1. Buat data user Buyer
+        $buyer = User::firstOrCreate(
+            ['email' => 'buyer_tc112@test.com'],
             [
-                'name' => 'Buyer QWER',
+                'name' => 'Buyer TC112',
                 'role' => 'buyer',
-                'password' => bcrypt('qwerqwer'),
+                'password' => bcrypt('password123'),
                 'email_verified_at' => now(),
             ]
         );
 
-        $this->browse(function (Browser $browser) {
-            
-            // 1 & 2. Login sebagai pembeli
-            $browser->visit('/login') 
-                ->waitFor('input[type="email"]', 5) 
-                ->type('input[type="email"]', 'qwer@gmail.com') 
-                ->type('input[type="password"]', 'qwerqwer') 
-                ->press('Login') 
-                ->pause(2000)
-                ->assertPathIs('/buyer/menu')
-                
-                // 3. Klik menu "Toko Terdekat"
-                ->clickLink('Toko Terdekat') 
-                ->pause(1000)
-                
-                // Force specific coordinates (Bandung)
-                ->visit('/buyer/nearby?lat=-6.9147&lng=107.6098')
-                ->pause(2000)
-                ->assertPathIs('/buyer/nearby')
-                
-                // 4. Perhatikan urutan daftar toko yang muncul.
-                // TANDA KEBERHASILAN: Memastikan UI memunculkan badge "Super Dekat"
-                ->assertSee('SUPER DEKAT')
-                ->assertSee('0,0 KM')
-                ->assertSee('0,3 KM')
-                ->assertSee('2,0 KM')
-                ->assertSee('14,1 KM');
+        // 2. Buat data Toko Dekat A (~0.3 KM)
+        $sellerUserA = User::firstOrCreate(
+            ['email' => 'toko_dekat_a@test.com'],
+            [
+                'name' => 'Toko Dekat A',
+                'role' => 'seller',
+                'password' => bcrypt('password123'),
+                'email_verified_at' => now(),
+            ]
+        );
+        Seller::firstOrCreate(
+            ['user_id' => $sellerUserA->id],
+            [
+                'store_name' => 'Toko Dekat A',
+                'address' => 'Jl. Toko Dekat A',
+                'latitude' => -6.9147,
+                'longitude' => 107.6125,
+                'verification_status' => 'approved',
+            ]
+        );
+
+        // 3. Buat data Toko Dekat B (~1.9 KM)
+        $sellerUserB = User::firstOrCreate(
+            ['email' => 'toko_dekat_b@test.com'],
+            [
+                'name' => 'Toko Dekat B',
+                'role' => 'seller',
+                'password' => bcrypt('password123'),
+                'email_verified_at' => now(),
+            ]
+        );
+        Seller::firstOrCreate(
+            ['user_id' => $sellerUserB->id],
+            [
+                'store_name' => 'Toko Dekat B',
+                'address' => 'Jl. Toko Dekat B',
+                'latitude' => -6.9147,
+                'longitude' => 107.6270,
+                'verification_status' => 'approved',
+            ]
+        );
+
+        // 4. Buat data Toko Sangat Jauh (~50.0 KM)
+        $sellerUserFar = User::firstOrCreate(
+            ['email' => 'toko_sangat_jauh@test.com'],
+            [
+                'name' => 'Toko Sangat Jauh',
+                'role' => 'seller',
+                'password' => bcrypt('password123'),
+                'email_verified_at' => now(),
+            ]
+        );
+        Seller::firstOrCreate(
+            ['user_id' => $sellerUserFar->id],
+            [
+                'store_name' => 'Toko Sangat Jauh',
+                'address' => 'Jl. Toko Sangat Jauh',
+                'latitude' => -6.9147,
+                'longitude' => 108.0628,
+                'verification_status' => 'approved',
+            ]
+        );
+
+        return compact('buyer');
+    }
+
+    /**
+     * TC-11.2: Menguji bahwa sistem hanya menampilkan toko yang berada di sekitar lokasi Buyer.
+     */
+    public function test_hanya_tampilkan_toko_dalam_radius(): void
+    {
+        $eco = $this->setupEcosystem();
+
+        $this->browse(function (Browser $browser) use ($eco) {
+            // Gunakan Chromium send_command untuk memaksa geolocation mengembalikan koordinat sukses di setiap page load
+            $browser->driver->executeCustomCommand('/session/:sessionId/chromium/send_command_and_get_result', 'POST', [
+                'cmd' => 'Page.addScriptToEvaluateOnNewDocument',
+                'params' => [
+                    'source' => '
+                        Object.defineProperty(navigator, "geolocation", {
+                            value: {
+                                getCurrentPosition: function(success, error, options) {
+                                    success({
+                                        coords: {
+                                            latitude: -6.9147,
+                                            longitude: 107.6098,
+                                            accuracy: 100
+                                        }
+                                    });
+                                }
+                            },
+                            writable: true
+                        });
+                    '
+                ]
+            ]);
+
+            // Langkah 1 & 3: Buka halaman Toko Terdekat & Login
+            $browser->loginAs($eco['buyer'])
+                ->visit('/buyer/nearby')
+                // Tunggu deteksi lokasi mock selesai
+                ->waitForText('Titik Lokasi Anda Ditemukan')
+                ->assertPathIs('/buyer/nearby');
+
+            // Langkah 4: Pastikan Toko Dekat A dan Toko Dekat B tampil di halaman UI
+            $browser->assertSee('Toko Dekat A')
+                ->assertSee('Toko Dekat B');
+
+            // Langkah 5: Pastikan Toko Sangat Jauh tidak tampil di halaman UI (karena berada di luar radius)
+            $browser->assertDontSee('Toko Sangat Jauh');
         });
     }
 }

@@ -8,7 +8,7 @@ use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Laravel\Dusk\Browser;
 use Tests\DuskTestCase;
 
-class TC101Test extends DuskTestCase
+class TC102Test extends DuskTestCase
 {
     use DatabaseTruncation;
 
@@ -50,12 +50,12 @@ class TC101Test extends DuskTestCase
         return compact('buyer', 'sellerUser', 'seller');
     }
 
-    public function test_buyer_allows_location_permission_to_view_nearby_stores(): void
+    public function test_buyer_denies_location_permission_shows_error_message(): void
     {
         $eco = $this->setupEcosystem();
 
         $this->browse(function (Browser $browser) use ($eco) {
-            // Gunakan Chromium send_command untuk memaksa geolocation mengembalikan koordinat sukses di setiap page load
+            // Gunakan Chromium send_command untuk memaksa Geolocation mengembalikan error PERMISSION_DENIED (code 1) di setiap page load
             $browser->driver->executeCustomCommand('/session/:sessionId/chromium/send_command_and_get_result', 'POST', [
                 'cmd' => 'Page.addScriptToEvaluateOnNewDocument',
                 'params' => [
@@ -63,12 +63,9 @@ class TC101Test extends DuskTestCase
                         Object.defineProperty(navigator, "geolocation", {
                             value: {
                                 getCurrentPosition: function(success, error, options) {
-                                    success({
-                                        coords: {
-                                            latitude: -6.9147,
-                                            longitude: 107.6098,
-                                            accuracy: 100
-                                        }
+                                    error({
+                                        code: 1,
+                                        message: "User denied Geolocation"
                                     });
                                 }
                             },
@@ -89,12 +86,16 @@ class TC101Test extends DuskTestCase
                 // Klik menu "Toko Terdekat"
                 ->clickLink('Toko Terdekat') 
                 
-                // Tunggu proses deteksi lokasi mock selesai dan redirect ke nearby
-                ->waitForText('Titik Lokasi Anda Ditemukan')
+                // Tunggu hingga pesan "Akses Lokasi Ditolak" muncul
+                ->waitForText('Akses Lokasi Ditolak')
+                ->pause(5000)
                 ->assertPathIs('/buyer/nearby')
-                // Validasi daftar toko muncul
-                ->assertSee('Toko PbiTigaDua')
-                ->assertSee('Jl. Pbi Tiga Dua No. 32');
+                ->pause(5000)
+                // Validasi daftar toko TIDAK muncul
+                ->assertDontSee('Toko PbiTigaDua')
+                // Validasi user tetap dapat bernavigasi menggunakan aplikasi (misal kembali ke menu)
+                ->clickLink('Daftar Menu')
+                ->assertPathIs('/buyer/menu');
         });
     }
 }
