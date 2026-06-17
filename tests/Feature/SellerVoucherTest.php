@@ -214,4 +214,30 @@ class SellerVoucherTest extends TestCase
             'id' => $voucher->id,
         ]);
     }
+
+    public function test_voucher_automatically_deactivates_when_expired_and_retrieved(): void
+    {
+        $eco = $this->createSeller('approved');
+        
+        // Buat voucher yang kedaluwarsa tetapi is_active = true di database
+        $voucher = Voucher::create([
+            'seller_id' => $eco['seller']->id,
+            'code' => 'EXPIRED10',
+            'type' => 'percent',
+            'value' => 10,
+            'min_order' => 10000,
+            'is_active' => true,
+            'expires_at' => now()->subMinutes(10), // Kedaluwarsa 10 menit yang lalu
+        ]);
+
+        // Ambil voucher dari database (memicu event retrieved)
+        $retrieved = Voucher::find($voucher->id);
+
+        // Pastikan status keaktifannya otomatis berubah menjadi false (non-aktif)
+        $this->assertFalse($retrieved->is_active);
+        $this->assertDatabaseHas('vouchers', [
+            'id' => $voucher->id,
+            'is_active' => false,
+        ]);
+    }
 }
