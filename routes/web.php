@@ -65,8 +65,10 @@ Route::middleware(['auth', 'check.banned', 'role:seller'])->prefix('seller')->gr
     Route::post('/profile', [SellerController::class, 'updateProfile'])->name('seller.profile.update');
     Route::post('/documents', [SellerController::class, 'uploadDocuments'])->name('seller.upload-documents');
     
-    // PBI-20: Komplain Masuk ke Toko
-    Route::get('/complaints', [SellerComplaintController::class, 'index'])->name('seller.complaints');
+    // PBI-20: Komplain Masuk ke Toko — Daftar, Detail, & Respons Seller
+    Route::get('/complaints', [SellerComplaintController::class, 'index'])->name('seller.complaints.index');
+    Route::get('/complaints/{id}', [SellerComplaintController::class, 'show'])->name('seller.complaints.show');
+    Route::post('/complaints/{id}/respond', [SellerComplaintController::class, 'respond'])->name('seller.complaints.respond');
 
     // PBI-21: Dasbor Analitik & Rekapitulasi Penjualan
     Route::get('/analytics', [SellerController::class, 'analytics'])->name('seller.analytics');

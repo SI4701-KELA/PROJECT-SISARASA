@@ -9,9 +9,11 @@ use App\Models\Order;
 use App\Models\Seller;
 use App\Models\Product;
 use App\Models\Category;
+use Illuminate\Foundation\Testing\DatabaseTruncation;
 
 class OrderVerificationTest extends DuskTestCase
 {
+    use DatabaseTruncation;
     /**
      * TS.PBI.018 - Generator QR Code (Positive)
      * Menampilkan QR Code pada pesanan siap ambil.
@@ -56,8 +58,10 @@ class OrderVerificationTest extends DuskTestCase
                 // Klik tombol verifikasi kode
                 ->press('Verifikasi Kode')
                 
-                // Tunggu dan pastikan toast sukses / pesan berhasil
-                ->waitForText('Pesanan Berhasil Diserahkan', 10);
+                // Tunggu dan pastikan toast sukses / pesan berhasil, lalu tunggu redirect selesai (1.2s timeout in js)
+                ->waitForText('Pesanan Berhasil Diserahkan', 10)
+                ->pause(2000)
+                ->assertQueryStringHas('tab', 'selesai');
         });
     }
 
@@ -84,9 +88,10 @@ class OrderVerificationTest extends DuskTestCase
                 // Input kode unik salah
                 ->type('#pickup_code_input', 'SALAH123')
                 ->press('Verifikasi Kode')
+                ->pause(2000)
                 
-                // Muncul pesan error
-                ->waitForText('Kode tidak valid!', 10);
+                // Muncul pesan error (rendered oleh Alpine.js x-text)
+                ->waitForText('Kode tidak valid!', 15);
         });
     }
 

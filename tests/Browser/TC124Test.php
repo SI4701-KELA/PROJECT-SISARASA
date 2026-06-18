@@ -6,12 +6,12 @@ use Laravel\Dusk\Browser;
 use Tests\DuskTestCase;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 
-class TC123Test extends DuskTestCase
+class TC124Test extends DuskTestCase
 {
     use DatabaseTruncation;
     protected $seed = true;
 
-    public function test_filter_spesifik_kategori(): void
+    public function test_filter_spesifik_kategori_kosong(): void
     {
         $buyer = \App\Models\User::firstOrCreate(
             ['email' => 'qwer@gmail.com'],
@@ -39,18 +39,9 @@ class TC123Test extends DuskTestCase
                 ->pause(2000);
         
             // 4. Kategori: Minuman
-            $browser->clickLink('Minuman') 
+            $browser->clickLink('Cemilan & Pastry') 
                 ->pause(2000)
-                ->assertPathIs('/buyer/menu')
-                ->assertQueryStringHas('category_id', '3')
-
-            ->clickLink('Semua Makanan')
-            ->pause(2000)
-            ->assertSee('Semua Makanan');
-
-
-
-
+                ->assertSee('Tidak ada produk');
 
         });
     }

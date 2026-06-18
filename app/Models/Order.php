@@ -68,4 +68,23 @@ class Order extends Model
     {
         return $this->hasOne(Review::class);
     }
+
+    /**
+     * Cek apakah pesanan ini sudah diulas.
+     */
+    public function hasReview(): bool
+    {
+        return $this->review()->exists();
+    }
+
+    /**
+     * Cek apakah ada komplain aktif (tiket open/diproses) untuk seller pesanan ini.
+     */
+    public function hasActiveComplaint(): bool
+    {
+        return \App\Models\Complaint::where('buyer_id', $this->buyer_id)
+            ->where('seller_id', $this->seller_id)
+            ->whereIn('status_tiket', ['Open', 'Sedang Diproses'])
+            ->exists();
+    }
 }

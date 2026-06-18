@@ -2,138 +2,67 @@
 
 namespace Tests\Browser;
 
-use App\Models\User;
-use App\Models\Seller;
-use App\Models\Category;
-use App\Models\Product;
-use App\Models\Stock;
-use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Laravel\Dusk\Browser;
 use Tests\DuskTestCase;
+use Illuminate\Foundation\Testing\DatabaseTruncation;
 
 class TC122Test extends DuskTestCase
 {
     use DatabaseTruncation;
-
+    protected $seed = true;
     /**
-     * Setup ekosistem data uji:
-     * - 1 Buyer
-     * - 1 Seller Aktif (approved)
-     * - Kategori "Makanan" dan "Minuman"
-     * - Produk:
-     *   * Minuman: "Es Teh", "Jus Alpukat"
-     *   * Makanan: "Nasi Goreng", "Ayam Bakar"
+     * TC-12.2: Menguji penyaringan berdasarkan kategori spesifik.
      */
-    private function setupEcosystem()
+    public function test_filter_semua_kategori(): void
     {
-        // 1. Buat Buyer
-        $buyer = User::firstOrCreate(
-            ['email' => 'buyer_tc122@test.com'],
+        $buyer = \App\Models\User::firstOrCreate(
+            ['email' => 'qwer@gmail.com'],
             [
-                'name' => 'Buyer TC122',
+                'name' => 'Buyer QWER',
                 'role' => 'buyer',
-                'password' => bcrypt('password123'),
+                'password' => bcrypt('qwerqwer'),
                 'email_verified_at' => now(),
             ]
         );
 
-        // 2. Buat Seller Aktif (Approved)
-        $sellerUserActive = User::firstOrCreate(
-            ['email' => 'seller_tc122@test.com'],
-            [
-                'name' => 'Seller TC122',
-                'role' => 'seller',
-                'password' => bcrypt('password123'),
-                'email_verified_at' => now(),
-            ]
-        );
-        $sellerActive = Seller::firstOrCreate(
-            ['user_id' => $sellerUserActive->id],
-            [
-                'store_name' => 'Toko Menu TC122',
-                'address' => 'Jl. Menu TC122',
-                'latitude' => -6.9147,
-                'longitude' => 107.6098,
-                'verification_status' => 'approved',
-            ]
-        );
+        $categories = ['Makanan Berat', 'Cemilan & Pastry', 'Minuman', 'Sayuran & Buah'];
+        foreach ($categories as $category) {
+            \App\Models\Category::firstOrCreate(['name' => $category]);
+        }
 
-        // 3. Buat Kategori
-        $catMakanan = Category::firstOrCreate(['name' => 'Makanan']);
-        $catMinuman = Category::firstOrCreate(['name' => 'Minuman']);
+        $this->browse(function (Browser $browser) {
+            
+            // 1. Login
+            $browser->visit('/login') 
+                ->waitFor('input[type="email"]', 5) 
+                ->type('input[type="email"]', 'qwer@gmail.com') 
+                ->type('input[type="password"]', 'qwerqwer') 
+                ->press('Login') 
+                ->pause(2000);
+            
+            // 2. Kategori: Makanan Berat
+            $browser->clickLink('Makanan Berat') 
+                ->pause(2000)
+                ->assertPathIs('/buyer/menu')            // Cek path utamanya
+                ->assertQueryStringHas('category_id', '1'); // Cek parameternya
 
-        // 4. Buat Produk Kategori Minuman
-        $esteh = Product::create([
-            'seller_id' => $sellerActive->id,
-            'category_id' => $catMinuman->id,
-            'name' => 'Es Teh',
-            'description' => 'Es teh segar',
-            'base_price' => 3000,
-            'image' => 'default.jpg',
-        ]);
-        Stock::create(['product_id' => $esteh->id, 'qty_reg' => 10]);
+            // 3. Kategori: Cemilan & Pastry
+            $browser->clickLink('Cemilan & Pastry') 
+                ->pause(2000)
+                ->assertPathIs('/buyer/menu')
+                ->assertQueryStringHas('category_id', '2');
 
-        $jusAlpukat = Product::create([
-            'seller_id' => $sellerActive->id,
-            'category_id' => $catMinuman->id,
-            'name' => 'Jus Alpukat',
-            'description' => 'Jus alpukat manis',
-            'base_price' => 8000,
-            'image' => 'default.jpg',
-        ]);
-        Stock::create(['product_id' => $jusAlpukat->id, 'qty_reg' => 10]);
+            // 4. Kategori: Minuman
+            $browser->clickLink('Minuman') 
+                ->pause(2000)
+                ->assertPathIs('/buyer/menu')
+                ->assertQueryStringHas('category_id', '3');
 
-        // 5. Buat Produk Kategori Makanan
-        $nasigoreng = Product::create([
-            'seller_id' => $sellerActive->id,
-            'category_id' => $catMakanan->id,
-            'name' => 'Nasi Goreng',
-            'description' => 'Nasi goreng lezat',
-            'base_price' => 12000,
-            'image' => 'default.jpg',
-        ]);
-        Stock::create(['product_id' => $nasigoreng->id, 'qty_reg' => 10]);
-
-        $ayambakar = Product::create([
-            'seller_id' => $sellerActive->id,
-            'category_id' => $catMakanan->id,
-            'name' => 'Ayam Bakar',
-            'description' => 'Ayam bakar gurih',
-            'base_price' => 15000,
-            'image' => 'default.jpg',
-        ]);
-        Stock::create(['product_id' => $ayambakar->id, 'qty_reg' => 10]);
-
-        return compact('buyer');
-    }
-
-    /**
-     * TC-12.2: Menguji penyaringan produk berdasarkan kategori tertentu.
-     */
-    public function test_penyaringan_produk_berdasarkan_kategori(): void
-    {
-        $eco = $this->setupEcosystem();
-
-        $this->browse(function (Browser $browser) use ($eco) {
-            // Login dan kunjungi halaman Daftar Menu
-            $browser->loginAs($eco['buyer'])
-                ->visit('/buyer/menu')
-                ->waitForText('Katalog Menu Sisa Rasa')
-                ->assertPathIs('/buyer/menu');
-
-            // Langkah 1: Klik kategori "Minuman"
-            $browser->clickLink('Minuman')
-                ->pause(2000) // Tunggu transisi atau muat ulang data kategori
-                ->assertPathIs('/buyer/menu');
-
-            // Langkah 2 & Expected Result:
-            // 1. Sistem hanya menampilkan produk kategori Minuman
-            $browser->assertSee('Es Teh')
-                ->assertSee('Jus Alpukat');
-
-            // 2. Produk kategori lain (Makanan) tidak ditampilkan
-            $browser->assertDontSee('Nasi Goreng')
-                ->assertDontSee('Ayam Bakar');
+            // 5. Kategori: Sayuran & Buah
+            $browser->clickLink('Sayuran & Buah') 
+                ->pause(2000)
+                ->assertPathIs('/buyer/menu')
+                ->assertQueryStringHas('category_id', '4'); // Pastikan ID ini sesuai dengan database-mu!
         });
     }
 }

@@ -90,14 +90,7 @@ class ComplaintDuskTest extends DuskTestCase
 
     private function loginAs(Browser $browser, User $user): Browser
     {
-        return $browser
-            ->visit('/login')
-            ->waitFor('#email')
-            ->type('#email', $user->email)
-            ->type('#password', 'password')
-            ->press('Login')
-            ->waitUntilMissing('#email', 10)
-            ->assertPathIsNot('/login');
+        return $browser->loginAs($user);
     }
 
     /**
@@ -108,7 +101,7 @@ class ComplaintDuskTest extends DuskTestCase
     #[Test]
     #[Group('complaint')]
     #[Group('TC-CMP-001')]
-    public function test_complaint_button_visibility_based_on_status(): void
+    public function test_tombol_komplain_muncul_berdasarkan_status(): void
     {
         $buyerA = $this->createBuyer('Buyer A', 'buyera@complaint.test');
         $seller = $this->createSellerAndStore();
@@ -139,7 +132,7 @@ class ComplaintDuskTest extends DuskTestCase
     #[Test]
     #[Group('complaint')]
     #[Group('TC-CMP-002')]
-    public function test_buyer_cannot_complain_others_order(): void
+    public function test_pembeli_tidak_bisa_mengakses_komplain_orang_lain(): void
     {
         $buyerA = $this->createBuyer('Buyer A', 'buyera2@complaint.test');
         $buyerB = $this->createBuyer('Buyer B', 'buyerb@complaint.test');
@@ -167,7 +160,7 @@ class ComplaintDuskTest extends DuskTestCase
     #[Test]
     #[Group('complaint')]
     #[Group('TC-CMP-003')]
-    public function test_complaint_validation_requires_photo_for_bad_quality(): void
+    public function test_validasi_foto_bukti_untuk_kategori_basi(): void
     {
         $buyerA = $this->createBuyer('Buyer A', 'buyera3@complaint.test');
         $seller = $this->createSellerAndStore();
@@ -179,9 +172,12 @@ class ComplaintDuskTest extends DuskTestCase
                 ->select('kategori_masalah', 'Kualitas Buruk/Basi')
                 ->type('deskripsi', 'Kualitas makanan ini sangat buruk dan basi, mohon refund secepatnya karena ini tidak layak makan.')
                 // Secara eksplisit tidak melampirkan foto
-                ->press('Kirim Komplain')
-                ->assertPathIs('/buyer/stores/' . $seller->id . '/complaint') // Tetap di halaman yang sama
-                ->assertSee('Foto bukti wajib untuk kategori Kualitas Buruk/Basi');
+                // Hapus atribut required HTML5 agar form bisa submit ke server
+                // sehingga validasi Laravel server-side yang menampilkan pesan error
+                ->script("document.getElementById('foto_bukti').removeAttribute('required')");
+
+            $browser->press('Kirim Komplain')
+                ->waitForText('Foto bukti wajib diunggah untuk kategori Kualitas Buruk/Basi', 10);
         });
     }
 
@@ -192,7 +188,7 @@ class ComplaintDuskTest extends DuskTestCase
     #[Test]
     #[Group('complaint')]
     #[Group('TC-CMP-004')]
-    public function test_database_relations_are_correct(): void
+    public function test_relasi_database_order_dan_buyer_benar(): void
     {
         $buyerA = $this->createBuyer('Buyer A', 'buyera4@complaint.test');
         $seller = $this->createSellerAndStore();
@@ -224,7 +220,7 @@ class ComplaintDuskTest extends DuskTestCase
     #[Group('complaint')]
     #[Group('TC-CMP-005')]
     #[Group('TC-CMP-006')]
-    public function test_admin_can_reply_and_resolve_complaint(): void
+    public function test_admin_bisa_membalas_dan_mengubah_status_tiket(): void
     {
         $buyerA = $this->createBuyer('Buyer A', 'buyera5@complaint.test');
         $admin = $this->createAdmin();
@@ -244,10 +240,17 @@ class ComplaintDuskTest extends DuskTestCase
                 ->visitRoute('admin.complaints.index')
                 ->waitForText('#' . $complaint->id)
                 ->press('Tinjau')
-                ->pause(1000) // Tunggu Alpine modal terbuka dengan animasi
+                ->pause(1500) // Tunggu Alpine modal terbuka dengan animasi
                 ->waitForText('PEMBELI') // Teks di dalam modal
-                ->type('balasan_admin', 'Dana akan di-refund sepenuhnya, mohon maaf atas ketidaknyamanan ini.')
-                ->select('status_tiket', 'Selesai')
+                ->waitFor('textarea[name="balasan_admin"]', 10) // Pastikan textarea sudah muncul
+                ->scrollIntoView('textarea[name="balasan_admin"]')
+                ->pause(800); // Tunggu scroll selesai
+
+            // ->script() mengembalikan array, tidak bisa di-chain — break chain di sini
+            $browser->script("document.querySelector('textarea[name=\"balasan_admin\"]').focus(); document.querySelector('textarea[name=\"balasan_admin\"]').value = 'Dana akan di-refund sepenuhnya, mohon maaf atas ketidaknyamanan ini.';");
+
+            $browser->select('status_tiket', 'Selesai')
+                ->pause(500)
                 ->press('Simpan & Perbarui')
                 ->pause(2000) // Tunggu halaman selesai dimuat ulang (redirect)
                 ->assertPathIs('/admin/complaints')
@@ -262,7 +265,7 @@ class ComplaintDuskTest extends DuskTestCase
     #[Test]
     #[Group('complaint')]
     #[Group('TC-CMP-006')]
-    public function test_buyer_can_read_admin_reply(): void
+    public function test_pembeli_bisa_membaca_balasan_admin(): void
     {
         $buyerA = $this->createBuyer('Buyer A', 'buyera6@complaint.test');
         $seller = $this->createSellerAndStore();
@@ -292,7 +295,7 @@ class ComplaintDuskTest extends DuskTestCase
     #[Test]
     #[Group('complaint')]
     #[Group('TC-CMP-007')]
-    public function test_ticket_cannot_be_edited_if_resolved(): void
+    public function test_batasan_edit_tiket_jika_sedang_diproses(): void
     {
         $buyerA = $this->createBuyer('Buyer A', 'buyera7@complaint.test');
         $seller = $this->createSellerAndStore();

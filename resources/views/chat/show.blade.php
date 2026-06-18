@@ -95,6 +95,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let lastMessageId  = 0;
     let isFirstLoad    = true;
     let isSending      = false;
+    let lastRenderedDate = '';
 
     /**
      * Render pesan ke DOM tanpa kedip.
@@ -120,15 +121,14 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         let hasNew = false;
-        let lastDate = '';
 
         messages.forEach(function (msg) {
             if (msg.id <= lastMessageId) return;
             hasNew = true;
 
             // Date separator
-            if (msg.date !== lastDate) {
-                lastDate = msg.date;
+            if (msg.date !== lastRenderedDate) {
+                lastRenderedDate = msg.date;
                 const dateSep = document.createElement('div');
                 dateSep.className = 'flex items-center justify-center my-4';
                 dateSep.innerHTML = `<span class="px-3 py-1 bg-gray-100 text-gray-400 text-[10px] font-bold rounded-full uppercase tracking-wider">${msg.date}</span>`;

@@ -87,14 +87,23 @@
         <div class="sidebar-bar"></div>
       @endif
     </a>
-    {{-- Komplain Masuk — badge dari SellerSidebarComposer (di-cache 30 detik) --}}
-    <a href="{{ route('seller.complaints') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm relative {{ request()->routeIs('seller.complaints') ? 'tr font-semibold bg-red-50/40' : 'text-gray-400 font-medium hover:text-gray-600 hover:bg-gray-50' }}">
+    {{-- Komplain Masuk (PBI-20) --}}
+    @php
+      $sellerModel = auth()->user()->seller ?? null;
+      // Hitung tiket yang perlu perhatian: menunggu_seller (belum direspons) + Open (mediasi)
+      $incomingComplaintsCount = $sellerModel
+        ? \App\Models\Complaint::where('seller_id', $sellerModel->id)
+            ->whereIn('status_tiket', ['menunggu_seller', 'Open', 'Sedang Diproses'])
+            ->count()
+        : 0;
+    @endphp
+    <a href="{{ route('seller.complaints.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm relative {{ request()->routeIs('seller.complaints.*') ? 'tr font-semibold bg-red-50/40' : 'text-gray-400 font-medium hover:text-gray-600 hover:bg-gray-50' }}">
       <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
       Komplain Masuk
       @if($incomingComplaintsCount > 0)
         <span class="ml-auto bg-red-500 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full animate-pulse">{{ $incomingComplaintsCount }}</span>
       @endif
-      @if(request()->routeIs('seller.complaints'))
+      @if(request()->routeIs('seller.complaints.*'))
         <div class="sidebar-bar"></div>
       @endif
     </a>

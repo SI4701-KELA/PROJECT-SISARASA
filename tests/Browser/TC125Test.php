@@ -6,12 +6,12 @@ use Laravel\Dusk\Browser;
 use Tests\DuskTestCase;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 
-class TC123Test extends DuskTestCase
+class TC125Test extends DuskTestCase
 {
     use DatabaseTruncation;
     protected $seed = true;
 
-    public function test_filter_spesifik_kategori(): void
+    public function test_filter_kategori_perubahan_tombol_warna(): void
     {
         $buyer = \App\Models\User::firstOrCreate(
             ['email' => 'qwer@gmail.com'],
@@ -30,7 +30,7 @@ class TC123Test extends DuskTestCase
 
         $this->browse(function (Browser $browser) {
             
-            // 1. Login
+  
             $browser->visit('/login') 
                 ->waitFor('input[type="email"]', 5) 
                 ->type('input[type="email"]', 'qwer@gmail.com') 
@@ -38,19 +38,10 @@ class TC123Test extends DuskTestCase
                 ->press('Login') 
                 ->pause(2000);
         
-            // 4. Kategori: Minuman
-            $browser->clickLink('Minuman') 
-                ->pause(2000)
-                ->assertPathIs('/buyer/menu')
-                ->assertQueryStringHas('category_id', '3')
-
-            ->clickLink('Semua Makanan')
-            ->pause(2000)
-            ->assertSee('Semua Makanan');
-
-
-
-
+            $browser->clickLink('Cemilan & Pastry') 
+                ->pause(2000);
+                $classes = $browser->script("return Array.from(document.querySelectorAll('a')).find(a => a.textContent.includes('Cemilan & Pastry')).className;")[0];
+                $this->assertStringContainsString('bg-[#c04b36]', $classes, 'Kategori aktif harus memiliki background warna aktif');
 
         });
     }
