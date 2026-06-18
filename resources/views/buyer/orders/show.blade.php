@@ -258,8 +258,8 @@
     {{-- Buyer Cancellation Timer & Button --}}
     {{-- LAPIS 1 (Blade Guard): Render HANYA jika status 'menunggu_verifikasi' DAN masih dalam 15 detik --}}
     @php
-        $diffSeconds      = (int) now()->diffInSeconds($order->created_at);
-        $remainingSeconds = max(15 - $diffSeconds, 0);
+        $elapsedSeconds   = now()->getTimestamp() - $order->created_at->getTimestamp();
+        $remainingSeconds = max(15 - $elapsedSeconds, 0);
     @endphp
 
     @if(in_array($order->status, ['menunggu_verifikasi', 'diproses']) && $remainingSeconds > 0)

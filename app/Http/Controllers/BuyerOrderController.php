@@ -83,9 +83,10 @@ class BuyerOrderController extends Controller
             ->with('items')
             ->firstOrFail();
 
+        $elapsedSeconds = now()->getTimestamp() - $order->created_at->getTimestamp();
         // Security Guard: Tolak request jika status bukan 'menunggu_verifikasi'/'diproses' ATAU waktu 15 detik sudah habis
-        if (!in_array($order->status, ['menunggu_verifikasi', 'diproses']) || now()->diffInSeconds($order->created_at) > 15) {
-            abort(400, 'Pesanan tidak dapat dibatalkan.');
+        if (!in_array($order->status, ['menunggu_verifikasi', 'diproses']) || $elapsedSeconds > 15) {
+            abort(400, 'Pesanan tidak dapat dibatalkan. Batas waktu telah habis.');
         }
 
         \Illuminate\Support\Facades\DB::transaction(function () use ($order, $request) {
