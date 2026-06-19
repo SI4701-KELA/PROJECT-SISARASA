@@ -120,7 +120,7 @@ class LiveChatTest extends DuskTestCase
     #[Test]
     #[Group('chat')]
     #[Group('TC-CHT-001')]
-    public function test_chat_is_permanent_and_cannot_be_edited(): void
+    public function test_pesan_permanen_dan_tidak_bisa_diedit(): void
     {
         $buyer  = $this->createBuyerA();
         $seller = $this->createSeller();
@@ -163,7 +163,7 @@ class LiveChatTest extends DuskTestCase
     #[Test]
     #[Group('chat')]
     #[Group('TC-CHT-002')]
-    public function test_ajax_polling_receives_message_realtime(): void
+    public function test_ajax_polling_menerima_pesan_realtime(): void
     {
         $buyer  = $this->createBuyerA();
         $seller = $this->createSeller();
@@ -218,7 +218,7 @@ class LiveChatTest extends DuskTestCase
     #[Test]
     #[Group('chat')]
     #[Group('TC-CHT-003')]
-    public function test_unauthorized_user_cannot_access_others_chat(): void
+    public function test_pengguna_lain_tidak_bisa_mengakses_chat(): void
     {
         $buyerA = $this->createBuyerA();
         $buyerB = $this->createBuyerB();
@@ -263,7 +263,7 @@ class LiveChatTest extends DuskTestCase
     #[Test]
     #[Group('chat')]
     #[Group('TC-CHT-004')]
-    public function test_admin_cannot_see_user_messages(): void
+    public function test_admin_tidak_bisa_melihat_pesan_pengguna(): void
     {
         $admin = $this->createAdmin();
 
@@ -288,7 +288,7 @@ class LiveChatTest extends DuskTestCase
     #[Test]
     #[Group('chat')]
     #[Group('TC-CHT-005')]
-    public function test_unread_message_badge_notification(): void
+    public function test_notifikasi_badge_pesan_belum_dibaca(): void
     {
         $buyerA = $this->createBuyerA();
         $seller = $this->createSeller();

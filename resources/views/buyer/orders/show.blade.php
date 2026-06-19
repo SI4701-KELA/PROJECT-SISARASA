@@ -29,6 +29,12 @@
 @section('content')
 <div class="max-w-3xl mx-auto py-4">
     {{-- Status Banners --}}
+    @if(session('success'))
+        <div class="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl shadow-sm font-medium text-sm flex items-center gap-3">
+            <svg class="w-5 h-5 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+            {{ session('success') }}
+        </div>
+    @endif
     @if($order->status === 'dibatalkan')
     <div class="mb-6 bg-white border border-teal-500 rounded-xl p-4 text-center shadow-sm">
         <h3 class="text-teal-600 font-bold text-lg">Pesanan Berhasil di batalkan</h3>
@@ -71,8 +77,6 @@
                 Harap ambil pesanan Anda dalam waktu: <span class="font-bold text-red-600 font-mono text-base ml-1" x-text="formatTime()"></span>
                 <br><span class="text-xs text-gray-600">(Batas Maksimal: {{ $deadlineTime }} WIB)</span>
             </div>
-        </div>
-    @endif
 
     {{-- Back Link & Print Action (no-print) --}}
     <div class="flex items-center justify-between mb-8 no-print">
@@ -236,6 +240,30 @@
                 </div>
             </div>
 
+            {{-- QR Code & Pickup Code Section for ready orders --}}
+            @if($order->status === 'siap_diambil' && !empty($order->pickup_code))
+                {{-- Dotted Divider --}}
+                <div class="border-t-2 border-dashed border-gray-100 my-6"></div>
+
+                <div class="mb-6 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-gray-50 to-slate-50 border border-gray-100 rounded-3xl shadow-inner text-center">
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Tunjukkan QR Code ini ke Penjual</p>
+                    
+                    {{-- QR Code Box --}}
+                    <div class="bg-white p-4 rounded-2xl shadow-md border border-gray-100/60 flex items-center justify-center mb-3">
+                        <div id="qrcode-container" class="w-48 h-48 flex items-center justify-center bg-gray-50 rounded-xl overflow-hidden">
+                            <canvas id="qrcode-canvas" class="w-full h-full"></canvas>
+                        </div>
+                    </div>
+                    
+                    <p class="text-[10px] text-gray-400 font-bold mb-1.5 uppercase tracking-wide">Kode Unik Pengambilan</p>
+                    <div class="inline-flex items-center gap-2 px-5 py-1.5 bg-white rounded-xl border border-gray-100 shadow-sm">
+                        <span class="text-xl font-black text-gray-900 tracking-widest font-mono select-all uppercase">
+                            {{ $order->pickup_code }}
+                        </span>
+                    </div>
+                </div>
+            @endif
+
             {{-- Cancellation Reason (if cancelled) --}}
             @if($order->status === 'dibatalkan' && !empty($order->cancellation_reason))
                 <div class="mt-8 p-4 bg-red-50/50 border border-red-100 rounded-2xl text-left">
@@ -258,8 +286,8 @@
     {{-- Buyer Cancellation Timer & Button --}}
     {{-- LAPIS 1 (Blade Guard): Render HANYA jika status 'menunggu_verifikasi' DAN masih dalam 15 detik --}}
     @php
-        $diffSeconds      = (int) now()->diffInSeconds($order->created_at);
-        $remainingSeconds = max(15 - $diffSeconds, 0);
+        $elapsedSeconds   = now()->getTimestamp() - $order->created_at->getTimestamp();
+        $remainingSeconds = max(15 - $elapsedSeconds, 0);
     @endphp
 
     @if(in_array($order->status, ['menunggu_verifikasi', 'diproses']) && $remainingSeconds > 0)
@@ -324,6 +352,7 @@
 
                 {{-- ── Tombol Utama ── --}}
                 <button
+                    id="btn-open-cancel-modal"
                     @click="showModal = true"
                     class="w-full py-3 px-4 rounded-xl font-bold text-white text-sm transition-opacity hover:opacity-90 active:opacity-75"
                     style="background:#c04b36;"
@@ -438,6 +467,7 @@
                             {{-- ── Tombol Submit (always visible, tidak terpotong) ── --}}
                             <div class="px-5 pb-5 pt-3 border-t border-gray-100 shrink-0">
                                 <button
+                                    id="btn-submit-cancel"
                                     type="submit"
                                     :disabled="!reason || (reason === 'Lainnya' && !otherReason)"
                                     class="w-full py-3 px-4 rounded-xl font-bold text-white text-sm transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
@@ -452,7 +482,6 @@
             </template>
         </div>
     @endif
-
 
     {{-- Bottom Actions (no-print) --}}
     <div class="flex flex-col sm:flex-row gap-3 mt-8 no-print justify-center">

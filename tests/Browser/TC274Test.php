@@ -118,6 +118,7 @@ class TC274Test extends DuskTestCase
                 // 8. Buyer melihat informasi pembatalan dan alasan yang diisi oleh Seller
                 ->assertSee('Pesanan Berhasil di batalkan')
                 ->assertSee('ALASAN PEMBATALAN:')
+                ->pause(5000)
                 ->assertSee('Stok habis');
         });
 

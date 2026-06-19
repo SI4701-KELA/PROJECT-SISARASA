@@ -1,0 +1,8 @@
+Warning: TTY mode is not supported on Windows platform.
+
+   PASS  Tests\Browser\OrderVerificationTest
+  ✓ seller verify with wrong code fails                                                                         10.57s  
+
+  Tests:    1 passed (0 assertions)
+  Duration: 11.14s
+

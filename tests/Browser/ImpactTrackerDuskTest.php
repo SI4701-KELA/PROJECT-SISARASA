@@ -127,7 +127,7 @@ class ImpactTrackerDuskTest extends DuskTestCase
     #[Test]
     #[Group('impact')]
     #[Group('TC-IMP-001')]
-    public function test_impact_tracker_only_counts_surplus_items(): void
+    public function test_impact_tracker_hanya_menghitung_item_surplus(): void
     {
         $admin = $this->createAdminUser();
         $user = $this->createSellerUser('Toko Sisa Rasa');
@@ -144,7 +144,7 @@ class ImpactTrackerDuskTest extends DuskTestCase
         $this->browse(function (Browser $browser) use ($admin) {
             $browser->loginAs($admin)
                 ->visitRoute('admin.impact-tracker')
-                ->pause(1000) // Tunggu sebentar untuk animasi CSS counter-up UI
+                ->pause(1500)
                 // Memastikan angka 10 diabaikan dan hanya 5 porsi Surplus yang tampil
                 ->assertSeeIn('#hero-food-saved', '5')
                 // Memastikan "Kerugian Finansial yang Dicegah" hanya menghitung surplus (5 x 10.000)
@@ -158,7 +158,7 @@ class ImpactTrackerDuskTest extends DuskTestCase
     #[Test]
     #[Group('impact')]
     #[Group('TC-IMP-002')]
-    public function test_impact_tracker_ignores_canceled_or_processing_orders(): void
+    public function test_impact_tracker_mengabaikan_pesanan_batal_atau_diproses(): void
     {
         $admin = $this->createAdminUser();
         $user = $this->createSellerUser('Toko Impact');
@@ -179,7 +179,7 @@ class ImpactTrackerDuskTest extends DuskTestCase
         $this->browse(function (Browser $browser) use ($admin) {
             $browser->loginAs($admin)
                 ->visitRoute('admin.impact-tracker')
-                ->pause(1000)
+                ->pause(1500)
                 // HANYA boleh menampilkan angka "2"
                 ->assertSeeIn('#hero-food-saved', '2')
                 // Memastikan tidak menghitung total seluruh order (6 porsi)
@@ -193,7 +193,7 @@ class ImpactTrackerDuskTest extends DuskTestCase
     #[Test]
     #[Group('impact')]
     #[Group('TC-IMP-005')]
-    public function test_total_umkm_contribution_uses_distinct_count(): void
+    public function test_total_kontribusi_umkm_menggunakan_hitungan_unik(): void
     {
         $admin = $this->createAdminUser();
         
@@ -221,7 +221,7 @@ class ImpactTrackerDuskTest extends DuskTestCase
         $this->browse(function (Browser $browser) use ($admin) {
             $browser->loginAs($admin)
                 ->visitRoute('admin.impact-tracker')
-                ->pause(1000)
+                ->pause(1500)
                 // Memastikan sistem melakukan COUNT DISTINCT dengan benar (Hanya 3 Toko)
                 ->assertSeeIn('#card-umkm', '3')
                 // Tidak boleh menampilkan total order (5) sebagai jumlah UMKM
@@ -232,7 +232,7 @@ class ImpactTrackerDuskTest extends DuskTestCase
     #[Test]
     #[Group('impact')]
     #[Group('TC-IMP-003')]
-    public function test_sum_qty_food_portions_accuracy(): void
+    public function test_akurasi_jumlah_porsi_makanan(): void
     {
         $admin = $this->createAdminUser();
         $seller = $this->createSellerStore($this->createSellerUser('Toko QTY'), 'Toko QTY');
@@ -245,7 +245,7 @@ class ImpactTrackerDuskTest extends DuskTestCase
         $this->browse(function (Browser $browser) use ($admin) {
             $browser->loginAs($admin)
                 ->visitRoute('admin.impact-tracker')
-                ->pause(1000)
+                ->pause(1500)
                 ->assertSeeIn('#hero-food-saved', '7');
         });
     }
@@ -253,7 +253,7 @@ class ImpactTrackerDuskTest extends DuskTestCase
     #[Test]
     #[Group('impact')]
     #[Group('TC-IMP-004')]
-    public function test_financial_loss_prevented_estimation_accuracy(): void
+    public function test_akurasi_estimasi_kerugian_finansial_dicegah(): void
     {
         $admin = $this->createAdminUser();
         $seller = $this->createSellerStore($this->createSellerUser('Toko Uang'), 'Toko Uang');
@@ -265,7 +265,7 @@ class ImpactTrackerDuskTest extends DuskTestCase
         $this->browse(function (Browser $browser) use ($admin) {
             $browser->loginAs($admin)
                 ->visitRoute('admin.impact-tracker')
-                ->pause(1000)
+                ->pause(1500)
                 ->assertSeeIn('#card-financial', '30.000');
         });
     }
@@ -273,7 +273,7 @@ class ImpactTrackerDuskTest extends DuskTestCase
     #[Test]
     #[Group('impact')]
     #[Group('TC-IMP-006')]
-    public function test_realtime_data_update_on_order_completion(): void
+    public function test_update_data_realtime_saat_pesanan_selesai(): void
     {
         $admin = $this->createAdminUser();
         $seller = $this->createSellerStore($this->createSellerUser('Toko Realtime'), 'Toko Realtime');
@@ -285,7 +285,7 @@ class ImpactTrackerDuskTest extends DuskTestCase
         $this->browse(function (Browser $browser) use ($admin, $seller) {
             $browser->loginAs($admin)
                 ->visitRoute('admin.impact-tracker')
-                ->pause(1000)
+                ->pause(1500)
                 ->assertSeeIn('#hero-food-saved', '1');
 
             // Order 2 diproses jadi Selesai (Simulasi Backend Update)
@@ -294,7 +294,7 @@ class ImpactTrackerDuskTest extends DuskTestCase
 
             // Refresh halaman memastikan data bertambah 1 + 5 = 6
             $browser->refresh()
-                ->pause(1000)
+                ->pause(1500)
                 ->assertSeeIn('#hero-food-saved', '6');
         });
     }
@@ -302,7 +302,7 @@ class ImpactTrackerDuskTest extends DuskTestCase
     #[Test]
     #[Group('impact')]
     #[Group('TC-IMP-007')]
-    public function test_macro_visualization_and_typography(): void
+    public function test_visualisasi_makro_dan_tipografi(): void
     {
         $admin = $this->createAdminUser();
         $seller = $this->createSellerStore($this->createSellerUser('Toko Visual'), 'Toko Visual');
@@ -312,6 +312,7 @@ class ImpactTrackerDuskTest extends DuskTestCase
         $this->browse(function (Browser $browser) use ($admin) {
             $browser->loginAs($admin)
                 ->visitRoute('admin.impact-tracker')
+                ->pause(1500)
                 ->assertPresent('.rank-badge') // Memastikan badge render
                 ->assertSee('Porsi Makanan Berhasil Diselamatkan')
                 ->assertSee('Kerugian Finansial Dicegah')

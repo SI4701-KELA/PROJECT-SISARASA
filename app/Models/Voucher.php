@@ -24,6 +24,16 @@ class Voucher extends Model
         'expires_at' => 'datetime',
     ];
 
+    protected static function booted()
+    {
+        static::retrieved(function ($voucher) {
+            if ($voucher->is_active && $voucher->expires_at && $voucher->expires_at->isPast()) {
+                $voucher->is_active = false;
+                $voucher->save();
+            }
+        });
+    }
+
     public function seller()
     {
         return $this->belongsTo(Seller::class);

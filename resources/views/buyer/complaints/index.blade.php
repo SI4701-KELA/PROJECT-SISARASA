@@ -31,14 +31,19 @@
 {{-- Stats --}}
 @if($complaints->count() > 0)
 @php
+  $menunggu = $complaints->where('status_tiket', 'menunggu_seller')->count();
   $open    = $complaints->where('status_tiket', 'Open')->count();
   $proses  = $complaints->where('status_tiket', 'Sedang Diproses')->count();
   $selesai = $complaints->where('status_tiket', 'Selesai')->count();
 @endphp
-<div class="grid grid-cols-3 gap-4 mb-6">
+<div class="grid grid-cols-4 gap-4 mb-6">
+  <div class="bg-white rounded-2xl p-4 text-center shadow-sm border border-gray-100">
+    <p class="text-2xl font-black text-orange-500">{{ $menunggu }}</p>
+    <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mt-1">Menunggu</p>
+  </div>
   <div class="bg-white rounded-2xl p-4 text-center shadow-sm border border-gray-100">
     <p class="text-2xl font-black text-amber-500">{{ $open }}</p>
-    <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mt-1">Open</p>
+    <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mt-1">Mediasi</p>
   </div>
   <div class="bg-white rounded-2xl p-4 text-center shadow-sm border border-gray-100">
     <p class="text-2xl font-black text-blue-500">{{ $proses }}</p>
@@ -55,11 +60,12 @@
 @forelse($complaints as $complaint)
 @php
   $statusConfig = [
-    'Open'           => ['bg' => 'bg-amber-100',  'text' => 'text-amber-700',  'dot' => 'bg-amber-400',  'label' => 'Open'],
-    'Sedang Diproses'=> ['bg' => 'bg-blue-100',   'text' => 'text-blue-700',   'dot' => 'bg-blue-500',   'label' => 'Sedang Diproses'],
+    'menunggu_seller'=> ['bg' => 'bg-orange-100', 'text' => 'text-orange-700', 'dot' => 'bg-orange-400', 'label' => 'Menunggu Seller'],
+    'Open'           => ['bg' => 'bg-blue-100',   'text' => 'text-blue-700',   'dot' => 'bg-blue-500',   'label' => 'Mediasi Admin'],
+    'Sedang Diproses'=> ['bg' => 'bg-yellow-100', 'text' => 'text-yellow-700', 'dot' => 'bg-yellow-500', 'label' => 'Sedang Diproses'],
     'Selesai'        => ['bg' => 'bg-green-100',  'text' => 'text-green-700',  'dot' => 'bg-green-500',  'label' => 'Selesai'],
   ];
-  $st = $statusConfig[$complaint->status_tiket] ?? $statusConfig['Open'];
+  $st = $statusConfig[$complaint->status_tiket] ?? $statusConfig['menunggu_seller'];
 @endphp
 <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-4 hover:shadow-md transition-shadow">
 
@@ -76,7 +82,7 @@
       </div>
       {{-- Status Badge --}}
       <span class="flex-shrink-0 inline-flex items-center gap-1.5 {{ $st['bg'] }} {{ $st['text'] }} text-xs font-bold px-3 py-1.5 rounded-full">
-        <span class="w-1.5 h-1.5 {{ $st['dot'] }} rounded-full {{ $complaint->status_tiket === 'Open' ? 'animate-pulse' : '' }}"></span>
+        <span class="w-1.5 h-1.5 {{ $st['dot'] }} rounded-full {{ in_array($complaint->status_tiket, ['menunggu_seller', 'Open']) ? 'animate-pulse' : '' }}"></span>
         {{ $st['label'] }}
       </span>
     </div>

@@ -193,6 +193,7 @@ class SellerOrderController extends Controller
             'message' => 'Pesanan Berhasil Diserahkan'
         ]);
     }
+
     /**
      * Membatalkan pesanan oleh penjual.
      */

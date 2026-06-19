@@ -13,7 +13,7 @@ use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Laravel\Dusk\Browser;
 use Tests\DuskTestCase;
 
-class Pbi27CancellationReasonDuskTest extends DuskTestCase
+class Pbi32CancellationReasonDuskTest extends DuskTestCase
 {
     use DatabaseTruncation;
 
@@ -98,8 +98,10 @@ class Pbi27CancellationReasonDuskTest extends DuskTestCase
             $this->loginAs($browser, $eco['buyer'])
                 ->visitRoute('buyer.orders.show', $eco['order']->id)
                 ->waitForText('Metode Pembayaran')
-                // Klik tombol "Batalkan Pesanan" utama
-                ->press('Batalkan Pesanan')
+                // Scroll ke tombol dan klik tombol "Batalkan Pesanan" utama
+                ->scrollIntoView('#btn-open-cancel-modal')
+                ->pause(500)
+                ->click('#btn-open-cancel-modal')
                 ->pause(1000) // Tunggu modal muncul
                 // Pilih alasan di dropdown
                 ->select('#cancellation_reason_select', 'Saya berubah pikiran')

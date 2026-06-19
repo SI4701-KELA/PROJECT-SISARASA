@@ -14,6 +14,18 @@ class Complaint extends Model
         'foto_bukti',
         'balasan_admin',
         'status_tiket',
+        // PBI-20: Kolom respons Seller untuk alur konfirmasi & mediasi
+        'seller_action',
+        'seller_reason',
+        'seller_proof_path',
+        'seller_responded_at',
+    ];
+
+    /**
+     * Cast otomatis untuk tipe data kolom tertentu.
+     */
+    protected $casts = [
+        'seller_responded_at' => 'datetime',
     ];
 
     /**

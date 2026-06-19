@@ -9,9 +9,11 @@ use App\Models\Order;
 use App\Models\Seller;
 use App\Models\Product;
 use App\Models\Category;
+use Illuminate\Foundation\Testing\DatabaseTruncation;
 
 class TransactionHistoryTest extends DuskTestCase
 {
+    use DatabaseTruncation;
     /**
      * TS.PBI.004 - Akses Riwayat Transaksi (Positive)
      * Menampilkan daftar pesanan yang sudah selesai.

@@ -93,7 +93,7 @@ class SellerAnalyticsDuskTest extends DuskTestCase
     #[Test]
     #[Group('analytics')]
     #[Group('TC-ANL-006')]
-    public function test_analytics_empty_state_for_new_seller(): void
+    public function test_state_kosong_analitik_untuk_seller_baru(): void
     {
         $user = $this->createSellerUser('Seller Baru', 'new_seller@analytics.test');
         $this->createSellerStore($user);
@@ -111,7 +111,7 @@ class SellerAnalyticsDuskTest extends DuskTestCase
     #[Test]
     #[Group('analytics')]
     #[Group('TC-ANL-002')]
-    public function test_seller_cannot_see_other_sellers_analytics(): void
+    public function test_seller_tidak_bisa_melihat_analitik_seller_lain(): void
     {
         $userA = $this->createSellerUser('Seller A', 'sellera@analytics.test');
         $sellerA = $this->createSellerStore($userA);
@@ -131,7 +131,7 @@ class SellerAnalyticsDuskTest extends DuskTestCase
     #[Test]
     #[Group('analytics')]
     #[Group('TC-ANL-001')]
-    public function test_revenue_calculation_only_includes_completed_orders(): void
+    public function test_kalkulasi_pendapatan_hanya_menghitung_pesanan_selesai(): void
     {
         $user = $this->createSellerUser('Seller Rev', 'seller_rev@analytics.test');
         $seller = $this->createSellerStore($user);
@@ -154,7 +154,7 @@ class SellerAnalyticsDuskTest extends DuskTestCase
     #[Test]
     #[Group('analytics')]
     #[Group('TC-ANL-003')]
-    public function test_portion_count_accurately_separates_regular_and_surplus(): void
+    public function test_hitungan_porsi_memisahkan_reguler_dan_surplus(): void
     {
         $user = $this->createSellerUser('Seller Portion', 'seller_portion@analytics.test');
         $seller = $this->createSellerStore($user);
@@ -179,7 +179,7 @@ class SellerAnalyticsDuskTest extends DuskTestCase
     #[Test]
     #[Group('analytics')]
     #[Group('TC-ANL-004')]
-    public function test_gross_revenue_calculation_accuracy(): void
+    public function test_akurasi_kalkulasi_pendapatan_kotor(): void
     {
         $user = $this->createSellerUser('Seller Gross', 'seller_gross@analytics.test');
         $seller = $this->createSellerStore($user);
@@ -198,7 +198,7 @@ class SellerAnalyticsDuskTest extends DuskTestCase
     #[Test]
     #[Group('analytics')]
     #[Group('TC-ANL-005')]
-    public function test_ui_render_cards_and_charts(): void
+    public function test_ui_merender_kartu_dan_grafik(): void
     {
         $user = $this->createSellerUser('Seller UI', 'seller_ui@analytics.test');
         $seller = $this->createSellerStore($user);
@@ -218,7 +218,7 @@ class SellerAnalyticsDuskTest extends DuskTestCase
     #[Test]
     #[Group('analytics')]
     #[Group('TC-ANL-007')]
-    public function test_time_filter_dropdown(): void
+    public function test_dropdown_filter_waktu(): void
     {
         $user = $this->createSellerUser('Seller Filter', 'seller_filter@analytics.test');
         $this->createSellerStore($user);
