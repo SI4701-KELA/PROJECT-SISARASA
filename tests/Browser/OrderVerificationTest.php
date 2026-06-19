@@ -24,8 +24,11 @@ class OrderVerificationTest extends DuskTestCase
         $this->browse(function (Browser $browser) use ($buyer, $order): void {
             $browser->loginAs($buyer)
                 ->visit("/buyer/orders/{$order->id}") // Halaman pelacakan pesanan buyer
+                ->pause(2000)
                 ->waitFor('#qrcode-canvas', 10)
+                ->pause(2000)
                 ->assertPresent('#qrcode-canvas') // QR Code Canvas muncul
+                ->pause(2000)
                 ->assertSee($order->pickup_code); // Kode unik teks muncul
         });
     }
@@ -43,18 +46,25 @@ class OrderVerificationTest extends DuskTestCase
             $browser->loginAs($sellerUser)
                 ->visit('/seller/orders?tab=siap') // Tab siap diambil
                 ->waitFor('.btn-verifikasi-pengambilan', 10)
+                ->pause(2000)
                 ->click('.btn-verifikasi-pengambilan') // Klik tombol verifikasi
+                ->pause(2000)
                 ->waitFor('#verify-modal', 5)
+                ->pause(2000)
                 
                 // Klik tab input manual
                 ->press('Input Manual')
+                ->pause(2000)
                 ->waitFor('#pickup_code_input', 5)
+                ->pause(2000)
                 
                 // Input kode unik yang benar
                 ->type('#pickup_code_input', 'SISA-88888')
+                ->pause(2000)
                 
                 // Klik tombol verifikasi kode
                 ->press('Verifikasi Kode')
+                ->pause(2000)
                 
                 // Tunggu dan pastikan toast sukses / pesan berhasil
                 ->waitForText('Pesanan Berhasil Diserahkan', 10);

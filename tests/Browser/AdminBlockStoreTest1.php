@@ -50,6 +50,7 @@ class AdminBlockStoreTest1 extends DuskTestCase
                     ->pause(2000)
                     ->screenshot('admin_reject_report_result')
                     ->assertPathIs('/admin/reports');
+
             $this->assertDatabaseHas('reports', [
                 'buyer_id' => $buyer->id,
                 'seller_id' => $seller->id,

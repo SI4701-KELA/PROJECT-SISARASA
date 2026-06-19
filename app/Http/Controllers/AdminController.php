@@ -162,15 +162,20 @@ class AdminController extends Controller
 
     public function reports()
     {
-        $reports = \App\Models\Report::with(['buyer', 'seller'])->latest()->get();
+        $reports = \App\Models\Report::with(['buyer', 'seller.user'])
+            ->orderBy('seller_id')
+            ->latest()
+            ->get();
         return view('admin.reports', compact('reports'));
     }
 
     public function rejectReport($id)
     {
         $report = \App\Models\Report::findOrFail($id);
-        $report->status = 'Ditolak';
-        $report->save();
+        
+        \App\Models\Report::where('seller_id', $report->seller_id)
+            ->where('status', '!=', 'Selesai')
+            ->update(['status' => 'Ditolak']);
 
         return redirect()->route('admin.reports')->with('success', 'Laporan telah ditolak.');
     }
@@ -179,8 +184,8 @@ class AdminController extends Controller
     {
         $report = \App\Models\Report::with('seller.user')->findOrFail($id);
         
-        $report->status = 'Selesai';
-        $report->save();
+        \App\Models\Report::where('seller_id', $report->seller_id)
+            ->update(['status' => 'Selesai']);
 
         if ($report->seller && $report->seller->user) {
             $user = $report->seller->user;
