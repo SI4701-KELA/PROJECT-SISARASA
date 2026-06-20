@@ -76,10 +76,16 @@ class SellerOrderController extends Controller
     public function rejectPayment(Request $request, $id)
     {
         $request->validate([
+<<<<<<< Updated upstream
             'cancellation_reason' => 'required|string|min:5',
         ], [
             'cancellation_reason.required' => 'Alasan penolakan wajib diisi.',
             'cancellation_reason.min'      => 'Alasan penolakan minimal 5 karakter.',
+=======
+            'cancellation_reason' => 'required|string|max:500',
+        ], [
+            'cancellation_reason.required' => 'Alasan penolakan wajib diisi.',
+>>>>>>> Stashed changes
         ]);
 
         $seller = Seller::where('user_id', $request->user()->id)->firstOrFail();
@@ -128,11 +134,11 @@ class SellerOrderController extends Controller
             ->where('status', 'diproses')
             ->firstOrFail();
 
-        $now = now();
+        $now = now()->timezone('Asia/Jakarta');
         $pickupDeadline = $now->copy()->addHours(2);
         
         if ($seller->close_time) {
-            $closeTime = now()->setTimeFromTimeString($seller->close_time);
+            $closeTime = $now->copy()->setTimeFromTimeString($seller->close_time);
             
             if ($closeTime->lessThan($now)) {
                 $closeTime->addDay();
@@ -199,7 +205,11 @@ class SellerOrderController extends Controller
     public function cancel(Request $request, $id)
     {
         $request->validate([
+<<<<<<< Updated upstream
             'cancellation_reason' => 'required|string',
+=======
+            'cancellation_reason' => 'required|string|max:500',
+>>>>>>> Stashed changes
         ], [
             'cancellation_reason.required' => 'Alasan pembatalan wajib diisi.',
         ]);

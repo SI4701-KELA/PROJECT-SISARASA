@@ -230,22 +230,31 @@ class SellerOrderTest extends TestCase
     }
 
 
+<<<<<<< Updated upstream
     public function test_reject_payment_requires_minimum_reason_length(): void
+=======
+    public function test_reject_payment_accepts_custom_reason_from_lainnya(): void
+>>>>>>> Stashed changes
     {
         $eco = $this->createEcosystem();
         $order = $this->createOrder($eco, ['status' => 'menunggu_verifikasi']);
 
         $response = $this->actingAs($eco['sellerUser'])
             ->patch(route('seller.orders.reject', $order->id), [
+<<<<<<< Updated upstream
                 'cancellation_reason' => 'abc',
+=======
+                'cancellation_reason' => 'Alasan kustom dari penjual',
+>>>>>>> Stashed changes
             ]);
 
         $response->assertRedirect();
-        $response->assertSessionHasErrors('cancellation_reason');
+        $response->assertSessionHas('success');
 
         $this->assertDatabaseHas('orders', [
             'id' => $order->id,
-            'status' => 'menunggu_verifikasi',
+            'status' => 'dibatalkan',
+            'cancellation_reason' => 'Alasan kustom dari penjual',
         ]);
     }
 

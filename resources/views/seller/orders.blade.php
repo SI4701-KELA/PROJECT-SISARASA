@@ -8,6 +8,8 @@
     proofImage: '', 
     showRejectModal: false, 
     rejectOrderId: null,
+    rejectReason: '',
+    rejectOtherReason: '',
     openVerifyModal: false,
     verifyTab: 'camera',
     manualCode: '',
@@ -237,7 +239,7 @@
                     @if($order->payment_method === 'qris' && $order->payment_proof)
                         <button type="button"
                                 class="px-4 py-2 text-xs font-bold text-blue-600 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors btn-lihat-bukti"
-                                @click="showProofModal = true; proofImage = '{{ Storage::url($order->payment_proof) }}'">
+                                @click="showProofModal = true; proofImage = '{{ asset('storage/' . $order->payment_proof) }}'">
                             <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                             Lihat Bukti Transfer
                         </button>
@@ -311,16 +313,48 @@
             <form :action="'/seller/orders/' + rejectOrderId + '/reject'" method="POST" id="reject-form">
                 @csrf @method('PATCH')
                 <div class="mb-4">
+<<<<<<< Updated upstream
                     <label for="cancellation_reason" class="block text-sm font-bold text-gray-700 mb-2">Alasan Penolakan <span class="text-red-500">*</span></label>
                     <textarea name="cancellation_reason" id="cancellation_reason" rows="3" required minlength="5"
                               placeholder="Contoh: Nominal transfer kurang 5 ribu"
                               class="w-full bg-white border border-gray-200 focus:border-[#c04b36] focus:ring-1 focus:ring-[#c04b36] rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 font-medium transition-all resize-none"></textarea>
+=======
+                    <label for="cancellation_reason_dropdown" class="block text-sm font-bold text-gray-700 mb-2">Alasan Penolakan <span class="text-red-500">*</span></label>
+                    <select id="cancellation_reason_dropdown" x-model="rejectReason"
+                            class="w-full bg-white border border-gray-200 focus:border-[#c04b36] focus:ring-1 focus:ring-[#c04b36] rounded-xl px-4 py-3 text-sm text-gray-800 font-semibold transition-all">
+                        <option value="" disabled selected>Pilih Alasan Penolakan</option>
+                        <option value="Toko tutup">Toko tutup</option>
+                        <option value="Berubah pikiran">Berubah pikiran</option>
+                        <option value="Stok habis">Stok habis</option>
+                        <option value="Pembayaran tidak sesuai">Pembayaran tidak sesuai</option>
+                        <option value="Lainnya">Lainnya</option>
+                    </select>
+>>>>>>> Stashed changes
                 </div>
+
+                {{-- Textarea untuk alasan kustom saat "Lainnya" dipilih --}}
+                <div class="mb-4" x-show="rejectReason === 'Lainnya'" x-cloak>
+                    <label for="cancellation_reason_other" class="block text-sm font-bold text-gray-700 mb-2">Keterangan Lainnya <span class="text-red-500">*</span></label>
+                    <textarea id="cancellation_reason_other" x-model="rejectOtherReason" rows="3"
+                              placeholder="Tulis alasan penolakan lainnya..."
+                              class="w-full border border-gray-200 focus:border-[#c04b36] focus:ring-1 focus:ring-[#c04b36] rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 font-medium transition-all resize-none"></textarea>
+                </div>
+
+                {{-- Hidden field yang mengirim nilai akhir --}}
+                <input type="hidden" name="cancellation_reason"
+                       :value="rejectReason === 'Lainnya' ? rejectOtherReason : rejectReason">
+
                 <div class="flex gap-3 justify-end">
-                    <button type="button" @click="showRejectModal = false" class="px-5 py-2.5 text-sm font-bold text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors">
+                    <button type="button" @click="showRejectModal = false; rejectReason = ''; rejectOtherReason = '';" class="px-5 py-2.5 text-sm font-bold text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors">
                         Batal
                     </button>
+<<<<<<< Updated upstream
                     <button type="submit" class="px-5 py-2.5 text-sm font-bold text-white bg-red-500 rounded-xl hover:bg-red-600 transition-colors">
+=======
+                    <button type="submit"
+                            :disabled="!rejectReason || (rejectReason === 'Lainnya' && !rejectOtherReason)"
+                            class="px-5 py-2.5 text-sm font-bold text-white bg-red-500 rounded-xl hover:bg-red-600 transition-colors btn-submit-tolak disabled:opacity-40 disabled:cursor-not-allowed">
+>>>>>>> Stashed changes
                         Tolak & Batalkan Pesanan
                     </button>
                 </div>
