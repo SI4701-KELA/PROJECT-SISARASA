@@ -230,22 +230,23 @@ class SellerOrderTest extends TestCase
     }
 
 
-    public function test_reject_payment_requires_valid_dropdown_reason(): void
+    public function test_reject_payment_accepts_custom_reason_from_lainnya(): void
     {
         $eco = $this->createEcosystem();
         $order = $this->createOrder($eco, ['status' => 'menunggu_verifikasi']);
 
         $response = $this->actingAs($eco['sellerUser'])
             ->patch(route('seller.orders.reject', $order->id), [
-                'cancellation_reason' => 'Alasan sembarang',
+                'cancellation_reason' => 'Alasan kustom dari penjual',
             ]);
 
         $response->assertRedirect();
-        $response->assertSessionHasErrors('cancellation_reason');
+        $response->assertSessionHas('success');
 
         $this->assertDatabaseHas('orders', [
             'id' => $order->id,
-            'status' => 'menunggu_verifikasi',
+            'status' => 'dibatalkan',
+            'cancellation_reason' => 'Alasan kustom dari penjual',
         ]);
     }
 
