@@ -15,11 +15,10 @@ use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\SellerComplaintController;
 use App\Http\Controllers\SellerOrderController;
 use App\Http\Controllers\BuyerOrderController;
+use App\Http\Controllers\SellerVoucherController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return redirect()->route('login');
-});
+Route::get('/', [\App\Http\Controllers\LandingController::class, 'index'])->name('landing');
 
 Route::get('/dashboard', function () {
     $role = request()->user()->role;
@@ -66,8 +65,10 @@ Route::middleware(['auth', 'check.banned', 'role:seller'])->prefix('seller')->gr
     Route::post('/profile', [SellerController::class, 'updateProfile'])->name('seller.profile.update');
     Route::post('/documents', [SellerController::class, 'uploadDocuments'])->name('seller.upload-documents');
     
-    // PBI-20: Komplain Masuk ke Toko
-    Route::get('/complaints', [SellerComplaintController::class, 'index'])->name('seller.complaints');
+    // PBI-20: Komplain Masuk ke Toko — Daftar, Detail, & Respons Seller
+    Route::get('/complaints', [SellerComplaintController::class, 'index'])->name('seller.complaints.index');
+    Route::get('/complaints/{id}', [SellerComplaintController::class, 'show'])->name('seller.complaints.show');
+    Route::post('/complaints/{id}/respond', [SellerComplaintController::class, 'respond'])->name('seller.complaints.respond');
 
     // PBI-21: Dasbor Analitik & Rekapitulasi Penjualan
     Route::get('/analytics', [SellerController::class, 'analytics'])->name('seller.analytics');
@@ -90,6 +91,13 @@ Route::middleware(['auth', 'check.banned', 'role:seller'])->prefix('seller')->gr
         Route::put('/product/{id}', [SellerController::class, 'updateProduct'])->name('product.update');
         Route::delete('/product/{id}', [SellerController::class, 'destroyProduct'])->name('product.destroy');
         Route::patch('/product/{id}/toggle-discount', [SellerController::class, 'toggleDiscount'])->name('seller.product.toggle-discount');
+
+        // PBI-32: Seller Voucher Management
+        Route::get('/vouchers', [SellerVoucherController::class, 'index'])->name('seller.vouchers.index');
+        Route::post('/vouchers', [SellerVoucherController::class, 'store'])->name('seller.vouchers.store');
+        Route::put('/vouchers/{id}', [SellerVoucherController::class, 'update'])->name('seller.vouchers.update');
+        Route::delete('/vouchers/{id}', [SellerVoucherController::class, 'destroy'])->name('seller.vouchers.destroy');
+        Route::patch('/vouchers/{id}/toggle-status', [SellerVoucherController::class, 'toggleStatus'])->name('seller.vouchers.toggle-status');
     });
 });
 
@@ -116,6 +124,7 @@ Route::middleware(['auth', 'check.banned', 'role:buyer'])->prefix('buyer')->grou
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('buyer.checkout');
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('buyer.checkout.store');
     Route::get('/checkout/success/{orderId}', [CheckoutController::class, 'success'])->name('buyer.checkout.success');
+    Route::post('/checkout/check-voucher', [CheckoutController::class, 'checkVoucher'])->name('buyer.checkout.check-voucher');
 
     // Riwayat Pesanan Pembeli
     Route::get('/orders', [BuyerOrderController::class, 'index'])->name('buyer.orders.index');

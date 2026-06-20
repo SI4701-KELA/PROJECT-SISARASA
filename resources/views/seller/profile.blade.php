@@ -32,19 +32,39 @@
         <form action="{{ route('seller.profile.update') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
             @csrf
 
-            {{-- Foto Profil Toko --}}
-            <div>
-                <label for="store_photo" class="block text-sm font-semibold text-gray-700 mb-3">Foto Profil Toko (Opsional)</label>
-                <div class="flex items-center gap-4">
-                    @if(isset($seller) && $seller->store_photo)
-                        <img src="{{ Storage::url($seller->store_photo) }}" alt="Foto Toko" class="w-16 h-16 rounded-full object-cover shadow-sm border border-gray-100">
-                    @else
-                        <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 border border-gray-200 border-dashed">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {{-- Foto Profil Toko --}}
+                <div>
+                    <label for="store_photo" class="block text-sm font-semibold text-gray-700 mb-3">Foto Profil Toko (Opsional)</label>
+                    <div class="flex items-center gap-4">
+                        @if(isset($seller) && $seller->store_photo)
+                            <img src="{{ Storage::url($seller->store_photo) }}" alt="Foto Toko" class="w-16 h-16 rounded-full object-cover shadow-sm border border-gray-100">
+                        @else
+                            <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 border border-gray-200 border-dashed">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            </div>
+                        @endif
+                        <div class="flex-1">
+                            <input type="file" name="store_photo" id="store_photo" accept="image/*" class="w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-red-50 file:text-terracotta hover:file:bg-red-100 cursor-pointer transition-colors">
                         </div>
-                    @endif
-                    <div class="flex-1">
-                        <input type="file" name="store_photo" id="store_photo" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-terracotta hover:file:bg-red-100 cursor-pointer transition-colors">
+                    </div>
+                </div>
+
+                {{-- QRIS Toko --}}
+                <div>
+                    <label for="qris_image" class="block text-sm font-semibold text-gray-700 mb-3">QRIS Pembayaran (Opsional)</label>
+                    <div class="flex items-center gap-4">
+                        @if(isset($seller) && $seller->qris_image)
+                            <img src="{{ Storage::url($seller->qris_image) }}" alt="QRIS" class="w-16 h-16 rounded-xl object-cover shadow-sm border border-gray-100">
+                        @else
+                            <div class="w-16 h-16 rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 border border-gray-200 border-dashed">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+                            </div>
+                        @endif
+                        <div class="flex-1">
+                            <input type="file" name="qris_image" id="qris_image" accept="image/*" class="w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-red-50 file:text-terracotta hover:file:bg-red-100 cursor-pointer transition-colors">
+                            <p class="text-[10px] text-gray-400 mt-1">Wajib jika menerima QRIS.</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -67,13 +87,13 @@
                 {{-- Latitude --}}
                 <div>
                     <label for="latitude" class="block text-sm font-semibold text-gray-700 mb-2">Latitude</label>
-                    <input type="number" step="any" name="latitude" id="latitude" value="{{ old('latitude', $seller->latitude ?? '') }}"
+                    <input type="number" step="any" min="-90" max="90" name="latitude" id="latitude" value="{{ old('latitude', $seller->latitude ?? '') }}" required
                         class="w-full bg-white border border-gray-200 focus:border-terracotta focus:ring-1 focus:ring-terracotta rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 font-medium transition-all">
                 </div>
                 {{-- Longitude --}}
                 <div>
                     <label for="longitude" class="block text-sm font-semibold text-gray-700 mb-2">Longitude</label>
-                    <input type="number" step="any" name="longitude" id="longitude" value="{{ old('longitude', $seller->longitude ?? '') }}"
+                    <input type="number" step="any" min="-180" max="180" name="longitude" id="longitude" value="{{ old('longitude', $seller->longitude ?? '') }}" required
                         class="w-full bg-white border border-gray-200 focus:border-terracotta focus:ring-1 focus:ring-terracotta rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 font-medium transition-all">
                 </div>
             </div>

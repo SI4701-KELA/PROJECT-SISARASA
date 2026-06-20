@@ -90,7 +90,7 @@
                         </div>
                         
                         <div class="flex justify-between items-center mb-5">
-                            <span class="text-xs text-gray-500 font-medium">Stok: {{ $product->stock->qty_reg ?? 0 }}</span>
+                            <span class="text-xs text-gray-500 font-medium">Stok: {{ $isActive ? ($product->stock->qty_surplus ?? 0) : ($product->stock->qty_reg ?? 0) }}</span>
                             <div class="flex items-center gap-3 text-xs font-bold">
                                 <button @click="editOpen = true" class="text-blue-600 hover:text-blue-800 transition-colors">Edit</button>
                                 <form action="{{ route('product.destroy', $product->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus produk ini?');" class="inline">
@@ -157,7 +157,7 @@
                                         <div class="grid grid-cols-2 gap-4">
                                             <div>
                                                 <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Stok</label>
-                                                <input type="number" name="qty_reg" value="{{ $product->stock ? $product->stock->qty_reg : 0 }}" min="1" required class="w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-sm focus:border-terracotta focus:ring-1 focus:ring-terracotta">
+                                                <input type="number" name="qty_reg" value="{{ $product->stock ? ($isActive ? $product->stock->qty_surplus : $product->stock->qty_reg) : 0 }}" min="1" required class="w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-sm focus:border-terracotta focus:ring-1 focus:ring-terracotta">
                                             </div>
                                             <div>
                                                 <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Ganti Foto (Opsional)</label>

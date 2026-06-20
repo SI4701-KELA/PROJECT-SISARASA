@@ -18,10 +18,21 @@ class ComplaintController extends Controller
         // TC-CMP-001: Hanya toko yang sudah approved yang bisa dikomplain
         abort_if($seller->verification_status !== 'approved', 403, 'Toko ini tidak dapat dikomplain.');
 
-        // Cek apakah buyer sudah pernah mengajukan komplain yang masih aktif ke toko ini
+        // TC-CMP-002: Buyer harus punya minimal 1 pesanan "Selesai" di toko ini
+        $hasOrder = \App\Models\Order::where('buyer_id', auth()->id())
+            ->where('seller_id', $seller->id)
+            ->where('status', 'selesai')
+            ->exists();
+
+        if (!$hasOrder) {
+            return redirect()->route('buyer.store.show', $seller->id)->with('error', 'Anda tidak dapat mengajukan komplain karena tidak memiliki riwayat pesanan yang sudah selesai di toko ini.');
+        }
+
+        // Cek apakah buyer sudah pernah mengajukan komplain yang masih aktif ke toko ini.
+        // Status 'menunggu_seller' dan 'Open' dianggap masih aktif.
         $existingComplaint = Complaint::where('seller_id', $seller->id)
             ->where('buyer_id', auth()->id())
-            ->whereIn('status_tiket', ['Open', 'Sedang Diproses'])
+            ->whereIn('status_tiket', ['menunggu_seller', 'Open', 'Sedang Diproses'])
             ->first();
 
         return view('buyer.complaints.create', compact('seller', 'existingComplaint'));
@@ -56,13 +67,15 @@ class ComplaintController extends Controller
         }
 
         // TC-CMP-004: buyer_id WAJIB dari auth(), bukan request input
+        // Status awal 'menunggu_seller' — Seller harus mengonfirmasi terlebih dahulu
+        // sebelum Admin dapat memediasi (alur baru PBI-20).
         Complaint::create([
             'seller_id'        => $seller->id,
             'buyer_id'         => auth()->id(),
             'kategori_masalah' => $validated['kategori_masalah'],
             'deskripsi'        => $validated['deskripsi'],
             'foto_bukti'       => $fotoPath,
-            'status_tiket'     => 'Open',
+            'status_tiket'     => 'menunggu_seller',
         ]);
 
         return redirect()->route('buyer.complaints.index')

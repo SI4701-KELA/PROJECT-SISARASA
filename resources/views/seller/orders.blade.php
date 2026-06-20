@@ -116,28 +116,28 @@
 
     {{-- Tabs --}}
     <div class="flex gap-2 mb-6 overflow-x-auto pb-2" id="order-tabs">
-        <a href="{{ route('seller.orders', ['tab' => 'baru']) }}"
+        <a href="{{ route('seller.orders', ['tab' => 'baru']) }}" id="tab-baru"
            class="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap {{ $tab === 'baru' ? 'bg-[#c04b36] text-white shadow-sm' : 'bg-white border border-gray-100 text-gray-500 hover:border-terracotta hover:text-terracotta' }}">
             Pesanan Baru
             @if($countBaru > 0)
                 <span class="bg-white/20 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full {{ $tab === 'baru' ? '' : 'bg-red-500 !text-white' }}">{{ $countBaru }}</span>
             @endif
         </a>
-        <a href="{{ route('seller.orders', ['tab' => 'diproses']) }}"
+        <a href="{{ route('seller.orders', ['tab' => 'diproses']) }}" id="tab-diproses"
            class="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap {{ $tab === 'diproses' ? 'bg-[#c04b36] text-white shadow-sm' : 'bg-white border border-gray-100 text-gray-500 hover:border-terracotta hover:text-terracotta' }}">
             Diproses
             @if($countDiproses > 0)
                 <span class="text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full {{ $tab === 'diproses' ? 'bg-white/20 text-white' : 'bg-blue-100 text-blue-600' }}">{{ $countDiproses }}</span>
             @endif
         </a>
-        <a href="{{ route('seller.orders', ['tab' => 'siap']) }}"
+        <a href="{{ route('seller.orders', ['tab' => 'siap']) }}" id="tab-siap"
            class="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap {{ $tab === 'siap' ? 'bg-[#c04b36] text-white shadow-sm' : 'bg-white border border-gray-100 text-gray-500 hover:border-terracotta hover:text-terracotta' }}">
             Siap Diambil
             @if($countSiap > 0)
                 <span class="text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full {{ $tab === 'siap' ? 'bg-white/20 text-white' : 'bg-green-100 text-green-600' }}">{{ $countSiap }}</span>
             @endif
         </a>
-        <a href="{{ route('seller.orders', ['tab' => 'selesai']) }}"
+        <a href="{{ route('seller.orders', ['tab' => 'selesai']) }}" id="tab-selesai"
            class="px-5 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap {{ $tab === 'selesai' ? 'bg-[#c04b36] text-white shadow-sm' : 'bg-white border border-gray-100 text-gray-500 hover:border-terracotta hover:text-terracotta' }}">
             Riwayat
         </a>

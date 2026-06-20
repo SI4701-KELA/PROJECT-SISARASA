@@ -59,7 +59,13 @@ class ChatController extends Controller
             ->groupBy(function ($msg) use ($userId) {
                 return $msg->sender_id === $userId ? $msg->receiver_id : $msg->sender_id;
             })
-            ->map(fn($group) => $group->first());
+            ->map(function ($group) {
+                $msg = $group->first();
+                if ($msg && isset($msg->created_at)) {
+                    $msg->created_at = \Carbon\Carbon::parse($msg->created_at);
+                }
+                return $msg;
+            });
 
         // Ambil unread counts per kontak dalam 1 query (GROUP BY)
         $unreadCounts = DB::table('messages')

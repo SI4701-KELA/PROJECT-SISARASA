@@ -195,7 +195,7 @@ class SellerOrderTest extends TestCase
 
         $response = $this->actingAs($eco['sellerUser'])
             ->patch(route('seller.orders.reject', $order->id), [
-                'cancellation_reason' => 'Nominal transfer kurang 5 ribu',
+                'cancellation_reason' => 'Toko tutup',
             ]);
 
         $response->assertRedirect(route('seller.orders', ['tab' => 'baru']));
@@ -204,7 +204,7 @@ class SellerOrderTest extends TestCase
         $this->assertDatabaseHas('orders', [
             'id' => $order->id,
             'status' => 'dibatalkan',
-            'cancellation_reason' => 'Nominal transfer kurang 5 ribu',
+            'cancellation_reason' => 'Toko tutup',
         ]);
     }
 
@@ -313,7 +313,7 @@ class SellerOrderTest extends TestCase
 
         $response = $this->actingAs($sellerUserB)
             ->patch(route('seller.orders.reject', $order->id), [
-                'cancellation_reason' => 'Resi palsu',
+                'cancellation_reason' => 'Toko tutup',
             ]);
 
         $response->assertStatus(404);
@@ -386,13 +386,13 @@ class SellerOrderTest extends TestCase
 
         $this->actingAs($eco['sellerUser'])
             ->patch(route('seller.orders.reject', $order->id), [
-                'cancellation_reason' => 'Nominal tidak sesuai',
+                'cancellation_reason' => 'Stok habis',
             ]);
 
         $response = $this->actingAs($eco['sellerUser'])->get(route('seller.orders', ['tab' => 'selesai']));
 
         $response->assertStatus(200);
-        $response->assertSee('Nominal tidak sesuai');
+        $response->assertSee('Stok habis');
         $response->assertSee('Dibatalkan');
     }
 }

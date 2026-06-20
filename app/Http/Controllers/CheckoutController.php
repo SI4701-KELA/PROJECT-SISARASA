@@ -44,7 +44,14 @@ class CheckoutController extends Controller
         // Jika multi-seller, group by seller
         $seller = $cartItems->first()->product->seller;
 
-        return view('buyer.checkout', compact('cartItems', 'grandTotal', 'seller'));
+        $vouchers = \App\Models\Voucher::where('seller_id', $seller->id)
+            ->where('is_active', true)
+            ->where(function($q) {
+                $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+            })
+            ->get();
+
+        return view('buyer.checkout', compact('cartItems', 'grandTotal', 'seller', 'vouchers'));
     }
 
     /**
@@ -52,10 +59,11 @@ class CheckoutController extends Controller
      */
     public function store(Request $request)
     {
-        // Validasi payment_method secara strict
+        // Validasi request secara strict
         $request->validate([
             'payment_method' => 'required|in:cash,qris',
             'payment_proof' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'promo_code' => 'nullable|string',
         ]);
 
         $paymentMethod = $request->input('payment_method');
@@ -123,8 +131,41 @@ class CheckoutController extends Controller
                 $paymentProofPath = $request->file('payment_proof')->store('payments', 'public');
             }
 
-            // Tentukan status pesanan (Wajib 'menunggu_verifikasi' agar pembeli dapat membatalkan pesanan dalam 15 detik)
+            // Tentukan status pesanan
             $status = 'menunggu_verifikasi';
+
+            // Hitung potongan voucher jika ada
+            $discountAmount = 0;
+            $voucherCode = null;
+
+            if ($request->filled('promo_code')) {
+                $code = strtoupper(trim($request->input('promo_code')));
+                $voucher = \App\Models\Voucher::where('code', $code)
+                    ->where('seller_id', $seller->id)
+                    ->where('is_active', true)
+                    ->where(function($q) {
+                        $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+                    })
+                    ->first();
+
+                if (!$voucher) {
+                    throw new \Exception('Kode promo tidak valid untuk toko ini.');
+                }
+
+                if ($grandTotal < $voucher->min_order) {
+                    throw new \Exception('Minimum pembelian Rp ' . number_format($voucher->min_order, 0, ',', '.') . ' tidak terpenuhi.');
+                }
+
+                if ($voucher->type === 'fixed') {
+                    $discountAmount = $voucher->value;
+                } else if ($voucher->type === 'percent') {
+                    $discountAmount = (int) (($grandTotal * $voucher->value) / 100);
+                }
+
+                $discountAmount = min($discountAmount, $grandTotal);
+                $grandTotal = max(0, $grandTotal - $discountAmount);
+                $voucherCode = $voucher->code;
+            }
 
             // Buat order
             $order = Order::create([
@@ -134,6 +175,8 @@ class CheckoutController extends Controller
                 'payment_method' => $paymentMethod,
                 'payment_proof' => $paymentProofPath,
                 'status' => $status,
+                'voucher_code' => $voucherCode,
+                'discount_amount' => $discountAmount,
             ]);
 
             // Buat order items
@@ -143,9 +186,6 @@ class CheckoutController extends Controller
 
             // ─── POTONG STOK REAL-TIME (dengan Race-Condition Protection) ───
             foreach ($orderItemsData as $itemData) {
-                // lockForUpdate() mengunci baris di DB agar tidak bisa dibaca
-                // oleh transaksi lain sampai transaksi ini selesai (commit/rollback).
-                // Ini mencegah 2 pembeli membeli stok yang sama secara bersamaan.
                 $stock = Stock::where('product_id', $itemData['product_id'])
                     ->lockForUpdate()
                     ->first();
@@ -155,13 +195,11 @@ class CheckoutController extends Controller
                 }
 
                 if ($itemData['is_surplus']) {
-                    // Jalur SURPLUS: kurangi qty_surplus
                     if ($stock->qty_surplus < $itemData['qty']) {
                         throw new \Exception('Maaf, stok baru saja habis dipesan orang lain.');
                     }
                     $stock->qty_surplus -= $itemData['qty'];
                 } else {
-                    // Jalur REGULER: kurangi qty_reg
                     if ($stock->qty_reg < $itemData['qty']) {
                         throw new \Exception('Maaf, stok baru saja habis dipesan orang lain.');
                     }
@@ -170,19 +208,19 @@ class CheckoutController extends Controller
 
                 $stock->save();
             }
-            // ─────────────────────────────────────────────────────────────────
 
             // Kosongkan keranjang
             Cart::where('buyer_id', $buyerId)->delete();
 
             DB::commit();
 
-            return redirect()->route('buyer.orders.show', $order->id)
+            return redirect()->route('buyer.checkout.success', $order->id)
                 ->with('success', 'Pesanan berhasil dibuat!');
 
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()
+                ->withInput()
                 ->with('error', 'Gagal membuat pesanan: ' . $e->getMessage());
         }
     }
@@ -197,6 +235,90 @@ class CheckoutController extends Controller
             ->with(['items.product', 'seller'])
             ->firstOrFail();
 
+        // Redirect ke halaman detail pesanan (invoice) jika pesanan sudah selesai
+        if ($order->status === 'selesai') {
+            return redirect()->route('buyer.orders.show', $order->id);
+        }
+
         return view('buyer.checkout-success', compact('order'));
+    }
+
+    /**
+     * Cek kevalidan voucher via AJAX.
+     */
+    public function checkVoucher(Request $request)
+    {
+        $request->validate([
+            'code' => 'required|string',
+        ]);
+
+        $buyerId = $request->user()->id;
+        $cartItems = Cart::where('buyer_id', $buyerId)
+            ->with('product.discount')
+            ->get();
+
+        if ($cartItems->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Keranjang kosong.'
+            ], 422);
+        }
+
+        $seller = $cartItems->first()->product->seller;
+        if (!$seller) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Toko tidak ditemukan.'
+            ], 422);
+        }
+
+        // Hitung total belanja
+        $subtotal = 0;
+        foreach ($cartItems as $item) {
+            if ($item->is_surplus && $item->product->discount) {
+                $price = $item->product->discount->discount_price;
+            } else {
+                $price = $item->product->base_price;
+            }
+            $subtotal += $price * $item->qty;
+        }
+
+        $code = strtoupper(trim($request->input('code')));
+        $voucher = \App\Models\Voucher::where('code', $code)
+            ->where('seller_id', $seller->id)
+            ->where('is_active', true)
+            ->where(function($q) {
+                $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+            })
+            ->first();
+
+        if (!$voucher) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kode voucher tidak valid untuk toko ini.'
+            ], 422);
+        }
+
+        if ($subtotal < $voucher->min_order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Minimum pembelian Rp ' . number_format($voucher->min_order, 0, ',', '.') . ' tidak terpenuhi.'
+            ], 422);
+        }
+
+        $discount = 0;
+        if ($voucher->type === 'fixed') {
+            $discount = $voucher->value;
+        } else if ($voucher->type === 'percent') {
+            $discount = (int) (($subtotal * $voucher->value) / 100);
+        }
+
+        $discount = min($discount, $subtotal);
+
+        return response()->json([
+            'success' => true,
+            'discount' => $discount,
+            'message' => 'Voucher berhasil digunakan! Potongan Rp ' . number_format($discount, 0, ',', '.')
+        ]);
     }
 }

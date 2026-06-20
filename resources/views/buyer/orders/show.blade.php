@@ -28,12 +28,55 @@
 
 @section('content')
 <div class="max-w-3xl mx-auto py-4">
-    {{-- Success State Banner --}}
+    {{-- Status Banners --}}
+    @if(session('success'))
+        <div class="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl shadow-sm font-medium text-sm flex items-center gap-3">
+            <svg class="w-5 h-5 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+            {{ session('success') }}
+        </div>
+    @endif
     @if($order->status === 'dibatalkan')
     <div class="mb-6 bg-white border border-teal-500 rounded-xl p-4 text-center shadow-sm">
         <h3 class="text-teal-600 font-bold text-lg">Pesanan Berhasil di batalkan</h3>
     </div>
-    @endif
+    @elseif($order->status === 'diproses')
+    <div class="mb-6 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-xl shadow-sm text-sm text-center">
+        Pesanan sedang disiapkan. Estimasi waktu penyiapan: <span class="font-bold">15-20 Menit</span>
+    </div>
+    @elseif($order->status === 'siap_diambil' && $order->pickup_deadline)
+        @php
+            $deadlineIso = $order->pickup_deadline->timezone('Asia/Jakarta')->toIso8601String();
+            $deadlineTime = $order->pickup_deadline->timezone('Asia/Jakarta')->format('H:i');
+        @endphp
+        <div x-data="{
+            deadline: new Date('{{ $deadlineIso }}').getTime(),
+            now: new Date().getTime(),
+            get isExpired() {
+                return this.now >= this.deadline;
+            },
+            get timeLeft() {
+                return Math.max(0, Math.floor((this.deadline - this.now) / 1000));
+            },
+            init() {
+                setInterval(() => {
+                    this.now = new Date().getTime();
+                }, 1000);
+            },
+            formatTime() {
+                let t = this.timeLeft;
+                let h = Math.floor(t / 3600);
+                let m = Math.floor((t % 3600) / 60);
+                let s = t % 60;
+                return [h, m, s].map(v => v.toString().padStart(2, '0')).join(':');
+            }
+        }" class="text-center">
+            <div x-show="isExpired" style="display: none" class="mb-6 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl shadow-sm text-sm font-bold">
+                Batas waktu pengambilan telah terlewat.
+            </div>
+            <div x-show="!isExpired" style="display: none" class="mb-6 bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-xl shadow-sm text-sm">
+                Harap ambil pesanan Anda dalam waktu: <span class="font-bold text-red-600 font-mono text-base ml-1" x-text="formatTime()"></span>
+                <br><span class="text-xs text-gray-600">(Batas Maksimal: {{ $deadlineTime }} WIB)</span>
+            </div>
 
     {{-- Back Link & Print Action (no-print) --}}
     <div class="flex items-center justify-between mb-8 no-print">
@@ -105,6 +148,30 @@
             {{-- Dotted Divider --}}
             <div class="border-t-2 border-dashed border-gray-100 my-6"></div>
 
+            @if($order->status === 'siap_diambil' && $order->pickup_code)
+                {{-- QR Code & Pickup Code Section --}}
+                <div class="mb-6 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-gray-50 to-slate-50 border border-gray-100 rounded-3xl shadow-inner text-center no-print">
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Tunjukkan QR Code ini ke Penjual</p>
+                    
+                    {{-- QR Code Box --}}
+                    <div class="bg-white p-4 rounded-2xl shadow-md border border-gray-100/60 flex items-center justify-center mb-3">
+                        <div id="qrcode-container" class="w-48 h-48 flex items-center justify-center bg-gray-50 rounded-xl overflow-hidden">
+                            <canvas id="qrcode-canvas" class="w-full h-full"></canvas>
+                        </div>
+                    </div>
+                    
+                    <p class="text-[10px] text-gray-400 font-bold mb-1.5 uppercase tracking-wide">Kode Unik Pengambilan</p>
+                    <div class="inline-flex items-center gap-2 px-5 py-1.5 bg-white rounded-xl border border-gray-100 shadow-sm">
+                        <span class="text-xl font-black text-gray-900 tracking-widest font-mono select-all uppercase">
+                            {{ $order->pickup_code }}
+                        </span>
+                    </div>
+                </div>
+
+                {{-- Dotted Divider --}}
+                <div class="border-t-2 border-dashed border-gray-100 my-6 no-print"></div>
+            @endif
+
             {{-- Seller Info --}}
             <div class="mb-6">
                 <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Informasi Toko / Warung</h4>
@@ -148,11 +215,21 @@
             <div class="border-t-2 border-dashed border-gray-100 my-6"></div>
 
             {{-- Total Summary --}}
+            @php
+                $discount = $order->discount_amount ?? 0;
+                $subtotal = $order->total_amount + $discount;
+            @endphp
             <div class="space-y-3">
                 <div class="flex justify-between text-sm">
                     <span class="text-gray-500 font-medium">Subtotal Pembelian</span>
-                    <span class="text-gray-900 font-bold">Rp {{ number_format($order->total_amount, 0, ',', '.') }}</span>
+                    <span class="text-gray-900 font-bold">Rp {{ number_format($subtotal, 0, ',', '.') }}</span>
                 </div>
+                @if($discount > 0)
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-500 font-medium">Potongan Voucher ({{ $order->voucher_code }})</span>
+                    <span class="text-green-600 font-bold">-Rp {{ number_format($discount, 0, ',', '.') }}</span>
+                </div>
+                @endif
                 <div class="flex justify-between text-sm">
                     <span class="text-gray-500 font-medium">Biaya Layanan</span>
                     <span class="text-gray-900 font-bold">Rp 0</span>
@@ -162,6 +239,30 @@
                     <span class="text-2xl font-black text-[#c04b36]">Rp {{ number_format($order->total_amount, 0, ',', '.') }}</span>
                 </div>
             </div>
+
+            {{-- QR Code & Pickup Code Section for ready orders --}}
+            @if($order->status === 'siap_diambil' && !empty($order->pickup_code))
+                {{-- Dotted Divider --}}
+                <div class="border-t-2 border-dashed border-gray-100 my-6"></div>
+
+                <div class="mb-6 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-gray-50 to-slate-50 border border-gray-100 rounded-3xl shadow-inner text-center">
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Tunjukkan QR Code ini ke Penjual</p>
+                    
+                    {{-- QR Code Box --}}
+                    <div class="bg-white p-4 rounded-2xl shadow-md border border-gray-100/60 flex items-center justify-center mb-3">
+                        <div id="qrcode-container" class="w-48 h-48 flex items-center justify-center bg-gray-50 rounded-xl overflow-hidden">
+                            <canvas id="qrcode-canvas" class="w-full h-full"></canvas>
+                        </div>
+                    </div>
+                    
+                    <p class="text-[10px] text-gray-400 font-bold mb-1.5 uppercase tracking-wide">Kode Unik Pengambilan</p>
+                    <div class="inline-flex items-center gap-2 px-5 py-1.5 bg-white rounded-xl border border-gray-100 shadow-sm">
+                        <span class="text-xl font-black text-gray-900 tracking-widest font-mono select-all uppercase">
+                            {{ $order->pickup_code }}
+                        </span>
+                    </div>
+                </div>
+            @endif
 
             {{-- Cancellation Reason (if cancelled) --}}
             @if($order->status === 'dibatalkan' && !empty($order->cancellation_reason))
@@ -185,11 +286,11 @@
     {{-- Buyer Cancellation Timer & Button --}}
     {{-- LAPIS 1 (Blade Guard): Render HANYA jika status 'menunggu_verifikasi' DAN masih dalam 15 detik --}}
     @php
-        $diffSeconds      = (int) now()->diffInSeconds($order->created_at);
-        $remainingSeconds = max(15 - $diffSeconds, 0);
+        $elapsedSeconds   = now()->getTimestamp() - $order->created_at->getTimestamp();
+        $remainingSeconds = max(15 - $elapsedSeconds, 0);
     @endphp
 
-    @if($order->status === 'menunggu_verifikasi' && $remainingSeconds > 0)
+    @if(in_array($order->status, ['menunggu_verifikasi', 'diproses']) && $remainingSeconds > 0)
         <div
             x-data="{
                 timeLeft:    {{ $remainingSeconds }},
@@ -251,6 +352,7 @@
 
                 {{-- ── Tombol Utama ── --}}
                 <button
+                    id="btn-open-cancel-modal"
                     @click="showModal = true"
                     class="w-full py-3 px-4 rounded-xl font-bold text-white text-sm transition-opacity hover:opacity-90 active:opacity-75"
                     style="background:#c04b36;"
@@ -301,7 +403,7 @@
                                 @click="showModal = false"
                                 class="w-7 h-7 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 text-xs font-bold transition-colors"
                             >✕</button>
-                            <h3 id="cancel-modal-title" class="text-sm font-bold text-gray-900">Pilih Alasan</h3>
+                            <h3 id="cancel-modal-title" class="text-sm font-bold text-gray-900">Pilih Alasan Pembatalan</h3>
                         </div>
 
                         <form
@@ -312,37 +414,36 @@
                             @csrf
                             @method('PATCH')
 
-                            {{-- Daftar Alasan (scrollable) --}}
-                            <div class="overflow-y-auto px-5 py-4 space-y-3 grow">
-                                @php
-                                    $reasons = [
-                                        'Pembayaran gagal',
-                                        'Posisi Driver terlalu jauh',
-                                        'Saya berubah pikiran',
-                                        'Lupa pakai Voucher',
-                                        'Kesalahan alamat atau nomor telepon',
-                                        'Driver ingin membatalkan',
-                                        'Driver tidak memiliki uang yang cukup',
-                                        'Driver tidak bisa dihubungi',
-                                        'Lainnya',
-                                    ];
-                                @endphp
-
-                                @foreach($reasons as $r)
-                                    <label class="flex items-center gap-3 cursor-pointer group py-1">
-                                        <input
-                                            type="radio"
-                                            x-model="reason"
-                                            name="cancellation_reason_radio"
-                                            value="{{ $r }}"
-                                            class="w-5 h-5 shrink-0 cursor-pointer"
-                                            style="accent-color: #c04b36;"
-                                        >
-                                        <span class="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors leading-snug">
-                                            {{ $r }}
-                                        </span>
+                            {{-- Daftar Alasan (Dropdown) --}}
+                            <div class="px-5 py-4 space-y-4 grow">
+                                <div>
+                                    <label for="cancellation_reason_select" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                                        Alasan Pembatalan <span class="text-red-500">*</span>
                                     </label>
-                                @endforeach
+                                    <select
+                                        id="cancellation_reason_select"
+                                        x-model="reason"
+                                        class="w-full bg-white border border-gray-200 focus:border-[#c04b36] focus:ring-1 focus:ring-[#c04b36] rounded-xl px-4 py-3 text-sm text-gray-800 font-semibold transition-all"
+                                    >
+                                        <option value="" disabled selected>Pilih Alasan Pembatalan</option>
+                                        @php
+                                            $reasons = [
+                                                'Pembayaran gagal',
+                                                'Posisi Driver terlalu jauh',
+                                                'Saya berubah pikiran',
+                                                'Lupa pakai Voucher',
+                                                'Kesalahan alamat atau nomor telepon',
+                                                'Driver ingin membatalkan',
+                                                'Driver tidak memiliki uang yang cukup',
+                                                'Driver tidak bisa dihubungi',
+                                                'Lainnya',
+                                            ];
+                                        @endphp
+                                        @foreach($reasons as $r)
+                                            <option value="{{ $r }}">{{ $r }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
 
                                 {{-- Textarea Lainnya --}}
                                 <div x-show="reason === 'Lainnya'" x-cloak class="pt-1">
@@ -350,8 +451,7 @@
                                         x-model="otherReason"
                                         name="cancellation_reason_other"
                                         rows="3"
-                                        class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2"
-                                        style="focus-ring-color:#c04b36"
+                                        class="w-full border border-gray-200 focus:border-[#c04b36] focus:ring-1 focus:ring-[#c04b36] rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 font-medium transition-all resize-none"
                                         placeholder="Tulis alasan lainnya..."
                                     ></textarea>
                                 </div>
@@ -367,6 +467,7 @@
                             {{-- ── Tombol Submit (always visible, tidak terpotong) ── --}}
                             <div class="px-5 pb-5 pt-3 border-t border-gray-100 shrink-0">
                                 <button
+                                    id="btn-submit-cancel"
                                     type="submit"
                                     :disabled="!reason || (reason === 'Lainnya' && !otherReason)"
                                     class="w-full py-3 px-4 rounded-xl font-bold text-white text-sm transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
@@ -381,7 +482,6 @@
             </template>
         </div>
     @endif
-
 
     {{-- Bottom Actions (no-print) --}}
     <div class="flex flex-col sm:flex-row gap-3 mt-8 no-print justify-center">
@@ -404,3 +504,23 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        @if($order->status === 'siap_diambil' && !empty($order->pickup_code))
+            if (document.getElementById('qrcode-canvas')) {
+                var qr = new QRious({
+                    element: document.getElementById('qrcode-canvas'),
+                    value: '{{ $order->pickup_code }}',
+                    size: 200,
+                    background: '#ffffff',
+                    foreground: '#0f172a',
+                    level: 'H'
+                });
+            }
+        @endif
+    });
+</script>
+@endpush

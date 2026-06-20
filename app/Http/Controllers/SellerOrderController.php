@@ -192,6 +192,7 @@ class SellerOrderController extends Controller
             'message' => 'Pesanan Berhasil Diserahkan'
         ]);
     }
+
     /**
      * Membatalkan pesanan oleh penjual.
      */
@@ -201,6 +202,7 @@ class SellerOrderController extends Controller
             'cancellation_reason' => 'required|string|max:500',
         ], [
             'cancellation_reason.required' => 'Alasan pembatalan wajib diisi.',
+            'cancellation_reason.in'       => 'Alasan pembatalan tidak valid.',
         ]);
 
         $seller = Seller::where('user_id', $request->user()->id)->firstOrFail();
