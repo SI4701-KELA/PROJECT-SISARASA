@@ -20,8 +20,8 @@ class TC112Test extends DuskTestCase
         $sellersData = [
             ['email' => 'toko1@mock.com', 'name' => 'Toko 1', 'lat' => -6.9147, 'lng' => 107.6098], // 0.0 KM
             ['email' => 'toko2@mock.com', 'name' => 'Toko 2', 'lat' => -6.9170, 'lng' => 107.6090], // ~0.3 KM
-            ['email' => 'toko3@mock.com', 'name' => 'Toko 3', 'lat' => -6.9000, 'lng' => 107.6000], // ~1.9 KM
-            ['email' => 'toko4@mock.com', 'name' => 'Toko 4', 'lat' => -6.8500, 'lng' => 107.5000], // ~14.1 KM
+            ['email' => 'toko3@mock.com', 'name' => 'Toko 3', 'lat' => -6.9000, 'lng' => 107.6000], // ~2.0 KM
+            ['email' => 'toko4@mock.com', 'name' => 'Toko 4', 'lat' => -6.8500, 'lng' => 107.5000], // ~14.1 KM (seharusnya difilter karena > 10 KM)
         ];
 
         foreach ($sellersData as $data) {
@@ -77,7 +77,8 @@ class TC112Test extends DuskTestCase
                 ->assertSee('0,0 KM')
                 ->assertSee('0,3 KM')
                 ->assertSee('2,0 KM')
-                ->assertSee('14,1 KM');
+                ->assertDontSee('14,1 KM')
+                ->assertDontSee('Toko 4');
         });
     }
 }

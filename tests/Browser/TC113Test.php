@@ -31,7 +31,7 @@ class TC113Test extends DuskTestCase
         // Forcefully create 2 sellers: one close (< 5 KM) and one far (> 5 KM but < 50 KM)
         $sellersData = [
             ['email' => 'toko1@mock.com', 'name' => 'Toko 1 Dekat', 'lat' => -6.9147, 'lng' => 107.6098], // 0.0 KM
-            ['email' => 'toko2@mock.com', 'name' => 'Toko 2 Jauh', 'lat' => -6.8500, 'lng' => 107.5000],  // ~14.1 KM
+            ['email' => 'toko2@mock.com', 'name' => 'Toko 2 Jauh', 'lat' => -6.9500, 'lng' => 107.5500],  // ~7.7 KM
         ];
 
         foreach ($sellersData as $data) {

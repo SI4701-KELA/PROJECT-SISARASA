@@ -37,26 +37,34 @@ return new class extends Migration
             $table->timestamp('seller_responded_at')->nullable()->after('seller_proof_path');
         });
 
-        // Ubah enum status_tiket: tambah nilai 'menunggu_seller' dan ubah default-nya.
-        // Harus menggunakan DB::statement() karena Blueprint tidak mendukung
-        // perubahan enum secara langsung pada semua versi Laravel/MySQL.
-        DB::statement("
-            ALTER TABLE complaints
-            MODIFY COLUMN status_tiket
-            ENUM('menunggu_seller', 'Open', 'Sedang Diproses', 'Selesai')
-            NOT NULL DEFAULT 'menunggu_seller'
-        ");
+        if (Schema::getConnection()->getDriverName() === 'sqlite') {
+            Schema::table('complaints', function (Blueprint $table) {
+                $table->string('status_tiket')->default('menunggu_seller')->change();
+            });
+        } else {
+            DB::statement("
+                ALTER TABLE complaints
+                MODIFY COLUMN status_tiket
+                ENUM('menunggu_seller', 'Open', 'Sedang Diproses', 'Selesai')
+                NOT NULL DEFAULT 'menunggu_seller'
+            ");
+        }
     }
 
     public function down(): void
     {
-        // Kembalikan enum ke kondisi semula sebelum menghapus kolom
-        DB::statement("
-            ALTER TABLE complaints
-            MODIFY COLUMN status_tiket
-            ENUM('Open', 'Sedang Diproses', 'Selesai')
-            NOT NULL DEFAULT 'Open'
-        ");
+        if (Schema::getConnection()->getDriverName() === 'sqlite') {
+            Schema::table('complaints', function (Blueprint $table) {
+                $table->string('status_tiket')->default('Open')->change();
+            });
+        } else {
+            DB::statement("
+                ALTER TABLE complaints
+                MODIFY COLUMN status_tiket
+                ENUM('Open', 'Sedang Diproses', 'Selesai')
+                NOT NULL DEFAULT 'Open'
+            ");
+        }
 
         Schema::table('complaints', function (Blueprint $table) {
             $table->dropColumn([

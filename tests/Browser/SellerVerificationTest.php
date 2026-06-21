@@ -212,11 +212,8 @@ class SellerVerificationTest extends DuskTestCase
                 ->pause(1000)
                 ->click('.btn-tolak') // Asumsi tombol tolak
                 ->pause(500)
-                // Biarkan alasan kosong, klik submit
-                ->script("document.getElementById('cancellation_reason').removeAttribute('required');");
-            $browser->click('.btn-submit-tolak')
-                ->pause(2000)
-                ->assertSee('Alasan penolakan wajib diisi');
+                // Biarkan alasan kosong, pastikan tombol submit disable
+                ->assertButtonDisabled('.btn-submit-tolak');
         });
     }
 
@@ -237,7 +234,8 @@ class SellerVerificationTest extends DuskTestCase
                 ->pause(1000)
                 ->click('.btn-tolak')
                 ->pause(500)
-                ->select('cancellation_reason', 'Toko tutup')
+                ->select('#cancellation_reason_dropdown', 'Toko tutup')
+                ->pause(500)
                 ->click('.btn-submit-tolak')
                 ->pause(2000)
                 ->assertDontSee('Pesanan QRIS Batal Sukses'); // Hilang dari tab baru

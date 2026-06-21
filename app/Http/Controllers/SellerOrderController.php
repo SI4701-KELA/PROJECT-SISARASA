@@ -29,7 +29,7 @@ class SellerOrderController extends Controller
         } elseif ($tab === 'siap') {
             $orders = $query->where('status', 'siap_diambil')->get();
         } elseif ($tab === 'selesai') {
-            $orders = $query->whereIn('status', ['selesai', 'dibatalkan'])->get();
+            $orders = $query->whereIn('status', ['selesai', 'dibatalkan', 'hangus'])->get();
         } else {
             $orders = $query->get();
         }
@@ -43,7 +43,7 @@ class SellerOrderController extends Controller
         $countBaru     = (int) $statusCounts->get('menunggu_verifikasi', 0);
         $countDiproses = (int) $statusCounts->get('diproses', 0);
         $countSiap     = (int) $statusCounts->get('siap_diambil', 0);
-        $countSelesai  = (int) ($statusCounts->get('selesai', 0) + $statusCounts->get('dibatalkan', 0));
+        $countSelesai  = (int) ($statusCounts->get('selesai', 0) + $statusCounts->get('dibatalkan', 0) + $statusCounts->get('hangus', 0));
 
         return view('seller.orders', compact(
             'orders', 'tab', 'seller',

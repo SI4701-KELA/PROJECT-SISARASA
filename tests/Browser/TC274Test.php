@@ -104,7 +104,7 @@ class TC274Test extends DuskTestCase
                 ->press('Tolak Pesanan')
                 ->waitFor('#reject-modal')
                 // 4. Seller mengisi alasan pembatalan "Stok habis"
-                ->select('#cancellation_reason', 'Stok habis')
+                ->select('#cancellation_reason_dropdown', 'Stok habis')
                 ->pause(500)
                 // 5. Seller mengonfirmasi penolakan/pembatalan
                 ->press('Tolak & Batalkan Pesanan')
