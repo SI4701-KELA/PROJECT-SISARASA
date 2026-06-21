@@ -77,6 +77,8 @@
                 Harap ambil pesanan Anda dalam waktu: <span class="font-bold text-red-600 font-mono text-base ml-1" x-text="formatTime()"></span>
                 <br><span class="text-xs text-gray-600">(Batas Maksimal: {{ $deadlineTime }} WIB)</span>
             </div>
+        </div>
+    @endif
 
     {{-- Back Link & Print Action (no-print) --}}
     <div class="flex items-center justify-between mb-8 no-print">
