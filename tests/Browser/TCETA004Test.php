@@ -11,6 +11,7 @@ use App\Models\Stock;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
+use Illuminate\Foundation\Testing\WithoutMiddleware;
 use Laravel\Dusk\Browser;
 use Tests\DuskTestCase;
 
@@ -30,7 +31,7 @@ use Tests\DuskTestCase;
  */
 class TCETA004Test extends DuskTestCase
 {
-    use DatabaseTruncation;
+    use DatabaseTruncation, WithoutMiddleware;
 
     private function setupEcosystem()
     {

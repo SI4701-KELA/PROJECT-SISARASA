@@ -68,3 +68,33 @@ Artisan::command('inspire', function () {
         }
     }
 })->everyMinute();
+
+// PBI-17: Auto-expire pesanan yang melewati batas waktu pengambilan
+\Illuminate\Support\Facades\Schedule::call(function () {
+    $expiredOrders = \App\Models\Order::where('status', 'siap_diambil')
+        ->whereNotNull('pickup_deadline')
+        ->where('pickup_deadline', '<', now())
+        ->with('items')
+        ->get();
+
+    foreach ($expiredOrders as $order) {
+        \Illuminate\Support\Facades\DB::transaction(function () use ($order) {
+            $order->update([
+                'status' => 'hangus',
+                'cancellation_reason' => 'Pesanan hangus karena tidak diambil dalam batas waktu yang ditentukan.',
+            ]);
+
+            // Kembalikan stok
+            foreach ($order->items as $item) {
+                $stock = \App\Models\Stock::where('product_id', $item->product_id)->first();
+                if ($stock) {
+                    if ($item->is_surplus) {
+                        $stock->increment('qty_surplus', $item->qty);
+                    } else {
+                        $stock->increment('qty_reg', $item->qty);
+                    }
+                }
+            }
+        });
+    }
+})->everyMinute();

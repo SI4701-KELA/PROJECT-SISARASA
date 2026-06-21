@@ -26,7 +26,7 @@ class BuyerOrderController extends Controller
         if ($tab === 'aktif') {
             $orders = $query->whereIn('status', ['menunggu_verifikasi', 'diproses', 'siap_diambil'])->get();
         } else {
-            $orders = $query->whereIn('status', ['selesai', 'dibatalkan'])->get();
+            $orders = $query->whereIn('status', ['selesai', 'dibatalkan', 'hangus'])->get();
         }
 
         // Hitung count per tab dalam 1 query GROUP BY status
@@ -42,7 +42,8 @@ class BuyerOrderController extends Controller
         );
         $countRiwayat = (int) (
             $statusCounts->get('selesai', 0) +
-            $statusCounts->get('dibatalkan', 0)
+            $statusCounts->get('dibatalkan', 0) +
+            $statusCounts->get('hangus', 0)
         );
 
         return response()->view('buyer.orders.index', compact(
@@ -62,53 +63,36 @@ class BuyerOrderController extends Controller
             ->with(['seller.user', 'items.product'])
             ->firstOrFail();
 
+        // Auto-expire: jika siap_diambil dan melewati batas waktu → hangus
+        if ($order->status === 'siap_diambil'
+            && $order->pickup_deadline
+            && $order->pickup_deadline->isPast()
+        ) {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($order) {
+                $order->update([
+                    'status' => 'hangus',
+                    'cancellation_reason' => 'Pesanan hangus karena tidak diambil dalam batas waktu yang ditentukan.',
+                ]);
+
+                foreach ($order->items as $item) {
+                    $stock = \App\Models\Stock::where('product_id', $item->product_id)->first();
+                    if ($stock) {
+                        if ($item->is_surplus) {
+                            $stock->increment('qty_surplus', $item->qty);
+                        } else {
+                            $stock->increment('qty_reg', $item->qty);
+                        }
+                    }
+                }
+            });
+
+            $order->refresh();
+        }
+
         return response()->view('buyer.orders.show', compact('order'))
             ->header('Cache-Control', 'no-cache, no-store, max-age=0, must-revalidate')
             ->header('Pragma', 'no-cache')
             ->header('Expires', 'Sat, 01 Jan 2000 00:00:00 GMT');
-    }
-    /**
-     * Membatalkan pesanan oleh pembeli.
-     */
-    public function cancel(Request $request, $id)
-    {
-        $request->validate([
-            'cancellation_reason' => 'required|string',
-        ], [
-            'cancellation_reason.required' => 'Alasan pembatalan wajib diisi.',
-        ]);
-
-        $order = Order::where('id', $id)
-            ->where('buyer_id', $request->user()->id)
-            ->with('items')
-            ->firstOrFail();
-
-        $elapsedSeconds = now()->getTimestamp() - $order->created_at->getTimestamp();
-        // Security Guard: Tolak request jika status bukan 'menunggu_verifikasi'/'diproses' ATAU waktu 15 detik sudah habis
-        if (!in_array($order->status, ['menunggu_verifikasi', 'diproses']) || $elapsedSeconds > 15) {
-            abort(400, 'Pesanan tidak dapat dibatalkan. Batas waktu telah habis.');
-        }
-
-        \Illuminate\Support\Facades\DB::transaction(function () use ($order, $request) {
-            $order->update([
-                'status' => 'dibatalkan',
-                'cancellation_reason' => $request->input('cancellation_reason'),
-            ]);
-
-            // Kembalikan stok
-            foreach ($order->items as $item) {
-                $stock = \App\Models\Stock::where('product_id', $item->product_id)->first();
-                if ($stock) {
-                    if ($item->is_surplus) {
-                        $stock->increment('qty_surplus', $item->qty);
-                    } else {
-                        $stock->increment('qty_reg', $item->qty);
-                    }
-                }
-            }
-        });
-
-        return redirect()->back()->with('success', 'Pesanan berhasil dibatalkan.');
     }
 
 

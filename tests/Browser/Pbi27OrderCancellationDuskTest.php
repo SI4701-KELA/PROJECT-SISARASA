@@ -155,7 +155,7 @@ class Pbi27OrderCancellationDuskTest extends DuskTestCase
                 ->waitForText('Tolak Pesanan')
                 ->click('.btn-tolak')
                 ->pause(1000)
-                ->type('#cancellation_reason', 'Stok habis')
+                ->select('#cancellation_reason_dropdown', 'Stok habis')
                 ->press('form#reject-form button[type="submit"]')
                 ->pause(2000)
                 ->assertSee('telah dibatalkan');

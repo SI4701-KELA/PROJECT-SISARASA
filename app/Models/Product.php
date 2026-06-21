@@ -11,6 +11,15 @@ class Product extends Model
 
     protected $fillable = ['seller_id', 'category_id', 'name', 'description', 'base_price', 'image'];
 
+    protected static function booted()
+    {
+        static::creating(function ($product) {
+            if (empty($product->image)) {
+                $product->image = 'default.jpg';
+            }
+        });
+    }
+
     public function seller()
     {
         return $this->belongsTo(Seller::class);

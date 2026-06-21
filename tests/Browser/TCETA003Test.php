@@ -10,6 +10,7 @@ use App\Models\Seller;
 use App\Models\Stock;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
+use Illuminate\Foundation\Testing\WithoutMiddleware;
 use Laravel\Dusk\Browser;
 use Tests\DuskTestCase;
 
@@ -24,7 +25,7 @@ use Tests\DuskTestCase;
  */
 class TCETA003Test extends DuskTestCase
 {
-    use DatabaseTruncation;
+    use DatabaseTruncation, WithoutMiddleware;
 
     private function setupEcosystem()
     {

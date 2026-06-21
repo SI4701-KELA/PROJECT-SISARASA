@@ -35,7 +35,12 @@
             {{ session('success') }}
         </div>
     @endif
-    @if($order->status === 'dibatalkan')
+    @if($order->status === 'hangus')
+    <div class="mb-6 bg-orange-50 border border-orange-300 rounded-xl p-4 text-center shadow-sm">
+        <h3 class="text-orange-600 font-bold text-lg">Pesanan Hangus</h3>
+        <p class="text-orange-500 text-sm mt-1">Pesanan tidak diambil dalam batas waktu yang ditentukan.</p>
+    </div>
+    @elseif($order->status === 'dibatalkan')
     <div class="mb-6 bg-white border border-teal-500 rounded-xl p-4 text-center shadow-sm">
         <h3 class="text-teal-600 font-bold text-lg">Pesanan Berhasil di batalkan</h3>
     </div>
@@ -140,6 +145,8 @@
                             <span class="px-2.5 py-0.5 bg-green-50 text-green-700 text-xs font-bold rounded border border-green-200 uppercase tracking-wide">Selesai</span>
                         @elseif($order->status === 'dibatalkan')
                             <span class="px-2.5 py-0.5 bg-red-50 text-red-600 text-xs font-bold rounded border border-red-200 uppercase tracking-wide">Dibatalkan</span>
+                        @elseif($order->status === 'hangus')
+                            <span class="px-2.5 py-0.5 bg-orange-50 text-orange-600 text-xs font-bold rounded border border-orange-200 uppercase tracking-wide">Hangus</span>
                         @else
                             <span class="px-2.5 py-0.5 bg-gray-50 text-gray-600 text-xs font-bold rounded border border-gray-200 uppercase tracking-wide">{{ $order->status }}</span>
                         @endif
@@ -267,10 +274,12 @@
             @endif
 
             {{-- Cancellation Reason (if cancelled) --}}
-            @if($order->status === 'dibatalkan' && !empty($order->cancellation_reason))
-                <div class="mt-8 p-4 bg-red-50/50 border border-red-100 rounded-2xl text-left">
-                    <span class="text-xs font-bold text-red-600 uppercase tracking-wide block mb-1">Alasan Pembatalan:</span>
-                    <p class="text-sm text-red-700 font-semibold leading-relaxed">{{ $order->cancellation_reason }}</p>
+            @if(($order->status === 'dibatalkan' || $order->status === 'hangus') && !empty($order->cancellation_reason))
+                <div class="mt-8 p-4 {{ $order->status === 'hangus' ? 'bg-orange-50/50 border-orange-100' : 'bg-red-50/50 border-red-100' }} border rounded-2xl text-left">
+                    <span class="text-xs font-bold {{ $order->status === 'hangus' ? 'text-orange-600' : 'text-red-600' }} uppercase tracking-wide block mb-1">
+                        {{ $order->status === 'hangus' ? 'Alasan Pesanan Hangus:' : 'Alasan Pembatalan:' }}
+                    </span>
+                    <p class="text-sm {{ $order->status === 'hangus' ? 'text-orange-700' : 'text-red-700' }} font-semibold leading-relaxed">{{ $order->cancellation_reason }}</p>
                 </div>
             @endif
 
@@ -498,7 +507,7 @@
                 </svg>
                 Ajukan Komplain
             </a>
-        @elseif($order->status === 'dibatalkan')
+        @elseif($order->status === 'dibatalkan' || $order->status === 'hangus')
             <a href="{{ route('buyer.store.show', $order->seller_id) }}" class="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-gray-900 text-white font-bold text-sm rounded-2xl shadow-lg hover:shadow-xl hover:bg-gray-800 transition-all duration-300">
                 Kunjungi Toko Kembali
             </a>

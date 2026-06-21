@@ -73,4 +73,24 @@ class TCETA002Test extends DuskTestCase
                 ->screenshot('tc_eta_002_batas_waktu_siap_diambil');
         });
     }
+
+    public function test_warning_batas_waktu_terlewat_muncul(): void
+    {
+        $eco = $this->setupEcosystem();
+        // Simulasikan batas waktu lewat 1 jam yang lalu
+        $eco['order']->update(['pickup_deadline' => now()->subHour()]);
+
+        $this->browse(function (Browser $browser) use ($eco) {
+            $browser->loginAs($eco['buyer'])
+                ->visitRoute('buyer.orders.show', $eco['order']->id)
+                ->pause(1500)
+                ->assertSee('Pesanan Hangus')
+                ->assertSee('tidak diambil dalam batas waktu')
+                ->screenshot('tc_eta_002_batas_waktu_terlewat');
+        });
+
+        // Verifikasi status berubah ke hangus di database
+        $eco['order']->refresh();
+        $this->assertEquals('hangus', $eco['order']->status);
+    }
 }
