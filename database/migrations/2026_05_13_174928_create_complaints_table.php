@@ -21,7 +21,11 @@ return new class extends Migration
             $table->text('deskripsi');
             $table->string('foto_bukti')->nullable();
             $table->text('balasan_admin')->nullable();
-            $table->enum('status_tiket', ['Open', 'Sedang Diproses', 'Selesai'])->default('Open');
+            if (Illuminate\Support\Facades\DB::getDriverName() === 'sqlite') {
+                $table->string('status_tiket')->default('menunggu_seller');
+            } else {
+                $table->enum('status_tiket', ['Open', 'Sedang Diproses', 'Selesai'])->default('Open');
+            }
             $table->timestamps();
         });
     }

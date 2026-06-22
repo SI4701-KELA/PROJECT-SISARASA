@@ -107,6 +107,11 @@
                 'status_tiket'   => $complaint->status_tiket,
                 'created_at'     => $complaint->created_at->format('d M Y H:i'),
                 'is_done'        => $isDone,
+                'buyer_user_id'  => $complaint->buyer_id,
+                'seller_user_id' => $complaint->seller->user_id ?? null,
+                'seller_action'  => $complaint->seller_action,
+                'seller_reason'  => $complaint->seller_reason,
+                'seller_proof'   => $complaint->seller_proof_path,
               ]) }})"
               class="text-xs font-bold px-4 py-2 rounded-xl transition-colors
                 {{ $isDone
@@ -182,6 +187,21 @@
                class="w-full max-h-60 object-cover rounded-2xl border border-gray-200 shadow-sm">
         </div>
 
+        {{-- Sanggahan Seller --}}
+        <div x-show="ticket && ticket.seller_action">
+          <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Sanggahan / Respons Penjual</p>
+          <div class="bg-red-50 border border-red-200 rounded-2xl p-4 mb-3">
+            <p class="text-xs font-black text-red-700 uppercase tracking-wide mb-1" x-text="ticket && ticket.seller_action === 'approved' ? 'Setuju' : 'Tolak & Sanggah'"></p>
+            <p class="text-sm text-red-800 leading-relaxed" x-text="ticket ? ticket.seller_reason : ''"></p>
+          </div>
+          <div x-show="ticket && ticket.seller_proof">
+            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Foto Bukti Penjual</p>
+            <img :src="ticket && ticket.seller_proof ? '/storage/' + ticket.seller_proof : ''"
+                 alt="Foto bukti penjual"
+                 class="w-full max-h-60 object-cover rounded-2xl border border-gray-200 shadow-sm">
+          </div>
+        </div>
+
         {{-- Balasan Sebelumnya --}}
         <div x-show="ticket && ticket.balasan_admin">
           <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Balasan Sebelumnya</p>
@@ -193,6 +213,20 @@
         {{-- Form Balasan (Hanya jika belum Selesai) --}}
         <div x-show="ticket && !ticket.is_done" x-transition>
           <div class="border-t border-gray-100 pt-5">
+            {{-- Private Chat Buttons for Admin --}}
+            <div class="grid grid-cols-2 gap-3 mb-5">
+              <a :href="'/chat/' + ticket.buyer_user_id"
+                 class="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-3 rounded-2xl transition-colors shadow-sm">
+                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                 Hubungi Pembeli (Privat)
+              </a>
+              <a :href="'/chat/' + ticket.seller_user_id"
+                 class="flex items-center justify-center gap-2 bg-[#2aab7f] hover:bg-[#239970] text-white font-bold text-xs py-3 rounded-2xl transition-colors shadow-sm">
+                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                 Hubungi Penjual (Privat)
+              </a>
+            </div>
+
             <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">✏️ Tulis Balasan & Perbarui Status</p>
             <form method="POST" :action="ticket ? '/admin/complaints/' + ticket.id : '#'">
               @csrf

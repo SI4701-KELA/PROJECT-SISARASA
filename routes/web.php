@@ -151,9 +151,9 @@ Route::middleware(['auth', 'check.banned', 'role:buyer'])->prefix('buyer')->grou
 // PBI-30: Live Chat (AJAX Polling)
 Route::middleware(['auth', 'check.banned'])->group(function () {
     Route::get('/inbox', [\App\Http\Controllers\ChatController::class, 'index'])->name('chat.inbox');
-    Route::get('/chat/{contact}', [\App\Http\Controllers\ChatController::class, 'show'])->name('chat.show');
-    Route::get('/api/chat/{contact}', [\App\Http\Controllers\ChatController::class, 'fetchMessages'])->name('api.chat.fetch');
-    Route::post('/api/chat/{contact}', [\App\Http\Controllers\ChatController::class, 'sendMessage'])->name('api.chat.send');
+    Route::get('/chat/{contact_id}', [\App\Http\Controllers\ChatController::class, 'show'])->name('chat.show');
+    Route::get('/api/chat/fetch/{contact_id}', [\App\Http\Controllers\ChatController::class, 'fetchMessages'])->name('api.chat.fetch');
+    Route::post('/api/chat/send/{contact_id}', [\App\Http\Controllers\ChatController::class, 'sendMessage'])->name('api.chat.send');
 });
 
 Route::middleware('auth')->group(function () {

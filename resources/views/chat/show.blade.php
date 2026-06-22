@@ -29,8 +29,8 @@
         <div class="flex-1 min-w-0">
             <h2 class="text-sm font-bold text-gray-900 truncate">{{ $contact->name ?? 'User' }}</h2>
             <p class="text-[10px] font-bold uppercase tracking-wider
-                {{ $contact->role === 'seller' ? 'text-emerald-500' : 'text-blue-500' }}">
-                {{ $contact->role === 'seller' ? 'Penjual' : 'Pembeli' }}
+                {{ $contact->role === 'seller' ? 'text-emerald-500' : ($contact->role === 'admin' ? 'text-amber-500' : 'text-blue-500') }}">
+                {{ $contact->role === 'seller' ? 'Penjual' : ($contact->role === 'admin' ? 'Admin' : 'Pembeli') }}
             </p>
         </div>
         <div class="flex items-center gap-1.5 text-xs text-gray-400 font-medium" id="chat-status">
@@ -81,27 +81,32 @@
 document.addEventListener('DOMContentLoaded', function () {
     const contactId   = {{ $contact->id }};
     const authUserId  = {{ auth()->id() }};
-    const fetchUrl    = @json(route('api.chat.fetch', $contact->id));
-    const sendUrl     = @json(route('api.chat.send', $contact->id));
+    const fetchUrl    = @json(route('api.chat.fetch', ['contact_id' => $contact->id]));
+    const sendUrl     = @json(route('api.chat.send', ['contact_id' => $contact->id]));
     const csrfToken   = document.querySelector('input[name="_token"]').value;
-
+ 
     const chatBody     = document.getElementById('chat-body');
     const chatMessages = document.getElementById('chat-messages');
     const chatLoading  = document.getElementById('chat-loading');
     const chatForm     = document.getElementById('chat-form');
     const chatInput    = document.getElementById('chat-input');
     const sendBtn      = document.getElementById('chat-send-btn');
-
+ 
     let lastMessageId  = 0;
     let isFirstLoad    = true;
     let isSending      = false;
     let lastRenderedDate = '';
 
+    function isUserAtBottom() {
+        // Cek apakah user berada maksimal 100px dari dasar chat
+        return (chatBody.scrollHeight - chatBody.scrollTop - chatBody.clientHeight) <= 100;
+    }
+ 
     /**
      * Render pesan ke DOM tanpa kedip.
      * Hanya menambahkan pesan baru (id > lastMessageId).
      */
-    function renderMessages(messages) {
+    function renderMessages(messages, forceScroll = false) {
         if (!messages || messages.length === 0) {
             if (isFirstLoad) {
                 chatMessages.innerHTML = `
@@ -120,12 +125,20 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        // Hapus empty state view jika ada pesan
+        const emptyState = chatMessages.querySelector('.py-12');
+        if (emptyState) {
+            chatMessages.innerHTML = '';
+        }
+ 
         let hasNew = false;
-
+        // Tentukan status scroll sebelum pesan baru dimasukkan
+        const shouldScroll = forceScroll || isFirstLoad || isUserAtBottom();
+ 
         messages.forEach(function (msg) {
             if (msg.id <= lastMessageId) return;
             hasNew = true;
-
+ 
             // Date separator
             if (msg.date !== lastRenderedDate) {
                 lastRenderedDate = msg.date;
@@ -134,60 +147,60 @@ document.addEventListener('DOMContentLoaded', function () {
                 dateSep.innerHTML = `<span class="px-3 py-1 bg-gray-100 text-gray-400 text-[10px] font-bold rounded-full uppercase tracking-wider">${msg.date}</span>`;
                 chatMessages.appendChild(dateSep);
             }
-
+ 
             // Bubble
             const wrapper = document.createElement('div');
             wrapper.className = `flex ${msg.is_mine ? 'justify-end' : 'justify-start'} mb-2 bubble-in`;
-
+ 
             const bubble = document.createElement('div');
             bubble.className = msg.is_mine
                 ? 'max-w-[75%] px-4 py-2.5 rounded-2xl rounded-br-md bg-[#2aab7f] text-white text-sm font-medium shadow-sm'
                 : 'max-w-[75%] px-4 py-2.5 rounded-2xl rounded-bl-md bg-gray-100 text-gray-800 text-sm font-medium';
-
+ 
             bubble.innerHTML = `
                 <p class="leading-relaxed break-words">${msg.message}</p>
                 <p class="text-[10px] mt-1 ${msg.is_mine ? 'text-white/60' : 'text-gray-400'} text-right font-semibold">
                     ${msg.time}${msg.is_mine ? (msg.is_read ? ' ✓✓' : ' ✓') : ''}
                 </p>`;
-
+ 
             wrapper.appendChild(bubble);
             chatMessages.appendChild(wrapper);
-
+ 
             lastMessageId = msg.id;
         });
-
+ 
         chatLoading.style.display = 'none';
         isFirstLoad = false;
-
-        if (hasNew) {
+ 
+        if (hasNew && shouldScroll) {
             scrollToBottom();
         }
     }
-
+ 
     function scrollToBottom() {
         requestAnimationFrame(function () {
             chatBody.scrollTop = chatBody.scrollHeight;
         });
     }
-
+ 
     /**
      * Fetch messages via AJAX (untuk polling).
      */
-    async function loadMessages() {
+    async function loadMessages(forceScroll = false) {
         try {
             const res = await fetch(fetchUrl, {
                 headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
             });
             if (res.ok) {
                 const data = await res.json();
-                renderMessages(data);
+                renderMessages(data, forceScroll);
             }
         } catch (err) {
             // Silently fail on network errors to avoid UI disruption
             console.warn('Chat polling error:', err);
         }
     }
-
+ 
     /**
      * Send message via AJAX POST.
      */
@@ -195,11 +208,11 @@ document.addEventListener('DOMContentLoaded', function () {
         e.preventDefault();
         const text = chatInput.value.trim();
         if (!text || isSending) return;
-
+ 
         isSending = true;
         sendBtn.disabled = true;
-        chatInput.value = '';
-
+        chatInput.value = ''; // Kosongkan input secara instan
+ 
         try {
             const res = await fetch(sendUrl, {
                 method: 'POST',
@@ -211,10 +224,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 },
                 body: JSON.stringify({ message: text })
             });
-
+ 
             if (res.ok) {
-                // Langsung load untuk melihat pesan yang baru dikirim
-                await loadMessages();
+                // Langsung load untuk melihat pesan baru secara instan
+                await loadMessages(true);
             } else {
                 // Kembalikan teks jika gagal
                 chatInput.value = text;
@@ -228,10 +241,10 @@ document.addEventListener('DOMContentLoaded', function () {
             chatInput.focus();
         }
     }
-
+ 
     // Event listeners
     chatForm.addEventListener('submit', sendMessage);
-
+ 
     // Enter to send (Shift+Enter for newline di masa depan)
     chatInput.addEventListener('keydown', function (e) {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -239,13 +252,15 @@ document.addEventListener('DOMContentLoaded', function () {
             chatForm.dispatchEvent(new Event('submit'));
         }
     });
-
+ 
     // Initial load
     loadMessages();
-
+ 
     // AJAX Polling setiap 3 detik
-    const pollInterval = setInterval(loadMessages, 3000);
-
+    const pollInterval = setInterval(function() {
+        loadMessages(false);
+    }, 3000);
+ 
     // Cleanup saat meninggalkan halaman
     window.addEventListener('beforeunload', function () {
         clearInterval(pollInterval);

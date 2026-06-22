@@ -96,4 +96,47 @@ class BuyerOrderController extends Controller
     }
 
 
+    /**
+     * Membatalkan pesanan oleh pembeli.
+     */
+    public function cancel(Request $request, $id)
+    {
+        $request->validate([
+            'cancellation_reason' => 'required|string',
+        ], [
+            'cancellation_reason.required' => 'Alasan pembatalan wajib diisi.',
+        ]);
+
+        $order = Order::where('id', $id)
+            ->where('buyer_id', $request->user()->id)
+            ->with('items')
+            ->firstOrFail();
+
+        $elapsedSeconds = now()->getTimestamp() - $order->created_at->getTimestamp();
+        // Security Guard: Tolak request jika status bukan 'menunggu_verifikasi'/'diproses' ATAU waktu 15 detik sudah habis
+        if (!in_array($order->status, ['menunggu_verifikasi', 'diproses']) || $elapsedSeconds > 15) {
+            abort(400, 'Pesanan tidak dapat dibatalkan. Batas waktu telah habis.');
+        }
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($order, $request) {
+            $order->update([
+                'status' => 'dibatalkan',
+                'cancellation_reason' => $request->input('cancellation_reason'),
+            ]);
+
+            // Kembalikan stok
+            foreach ($order->items as $item) {
+                $stock = \App\Models\Stock::where('product_id', $item->product_id)->first();
+                if ($stock) {
+                    if ($item->is_surplus) {
+                        $stock->increment('qty_surplus', $item->qty);
+                    } else {
+                        $stock->increment('qty_reg', $item->qty);
+                    }
+                }
+            }
+        });
+
+        return redirect()->back()->with('success', 'Pesanan berhasil dibatalkan.');
+    }
 }

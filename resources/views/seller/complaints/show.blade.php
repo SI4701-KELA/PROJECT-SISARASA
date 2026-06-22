@@ -239,6 +239,15 @@
           </button>
         </div>
       </form>
+      @if($complaint->buyer)
+      <div class="mt-4 pt-4 border-t border-dashed border-gray-200">
+        <a href="{{ route('chat.show', $complaint->buyer->id) }}"
+           class="w-full inline-flex items-center justify-center gap-2 bg-[#2aab7f] hover:bg-[#239970] text-white font-bold text-sm px-4 py-3 rounded-2xl transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+          Chat Pembeli
+        </a>
+      </div>
+      @endif
     </div>
 
     @elseif($complaint->status_tiket === 'Open')
@@ -266,7 +275,7 @@
         $adminUser = \App\Models\User::where('role', 'admin')->first();
       @endphp
       @if($adminUser)
-      <a href="{{ route('chat.show', ['contact' => $adminUser->id]) }}?complaint_id={{ $complaint->id }}"
+      <a href="{{ route('chat.show', ['contact_id' => $adminUser->id]) }}"
          class="w-full inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-4 py-3 rounded-2xl transition-colors">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
         Hubungi Admin Mediasi

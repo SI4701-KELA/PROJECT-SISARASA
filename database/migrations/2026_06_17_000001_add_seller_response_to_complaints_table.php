@@ -37,6 +37,9 @@ return new class extends Migration
             $table->timestamp('seller_responded_at')->nullable()->after('seller_proof_path');
         });
 
+        // Ubah enum status_tiket: tambah nilai 'menunggu_seller' dan ubah default-nya.
+        // Harus menggunakan DB::statement() karena Blueprint tidak mendukung
+        // perubahan enum secara langsung pada semua versi Laravel/MySQL.
         if (Schema::getConnection()->getDriverName() === 'sqlite') {
             Schema::table('complaints', function (Blueprint $table) {
                 $table->string('status_tiket')->default('menunggu_seller')->change();
@@ -53,6 +56,7 @@ return new class extends Migration
 
     public function down(): void
     {
+        // Kembalikan enum ke kondisi semula sebelum menghapus kolom
         if (Schema::getConnection()->getDriverName() === 'sqlite') {
             Schema::table('complaints', function (Blueprint $table) {
                 $table->string('status_tiket')->default('Open')->change();

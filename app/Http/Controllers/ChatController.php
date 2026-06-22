@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Message;
 use App\Models\User;
+use App\Models\Complaint;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -96,12 +97,12 @@ class ChatController extends Controller
     /**
      * Ruang Chat — Tampilkan percakapan dengan kontak tertentu.
      */
-    public function show(User $contact)
+    public function show($contact_id)
     {
+        $contact = User::findOrFail($contact_id);
         $userId = auth()->id();
 
-        // PRIVACY: pastikan user pernah chat dengan contact ini,
-        // ATAU izinkan memulai chat baru (buyer → seller, seller → buyer)
+        // PRIVACY: pastikan user berhak melakukan chat dengan contact ini
         $this->authorizeChat($userId, $contact->id);
 
         // Tandai semua pesan masuk dari contact sebagai Read
@@ -110,7 +111,9 @@ class ChatController extends Controller
             ->where('is_read', false)
             ->update(['is_read' => true]);
 
-        $layout = auth()->user()->role === 'seller' ? 'layouts.seller' : 'layouts.buyer';
+        $layout = auth()->user()->role === 'seller'
+            ? 'layouts.seller'
+            : (auth()->user()->role === 'admin' ? 'layouts.admin' : 'layouts.buyer');
 
         return view('chat.show', compact('contact', 'layout'));
     }
@@ -119,8 +122,9 @@ class ChatController extends Controller
      * API Endpoint: GET — Ambil riwayat pesan (untuk AJAX polling).
      * Urut kronologis (terlama di atas).
      */
-    public function fetchMessages(User $contact)
+    public function fetchMessages($contact_id)
     {
+        $contact = User::findOrFail($contact_id);
         $userId = auth()->id();
 
         $this->authorizeChat($userId, $contact->id);
@@ -157,14 +161,15 @@ class ChatController extends Controller
     /**
      * API Endpoint: POST — Kirim pesan baru (CR only, tanpa Update/Delete).
      */
-    public function sendMessage(Request $request, User $contact)
+    public function sendMessage(Request $request, $contact_id)
     {
+        $contact = User::findOrFail($contact_id);
         $userId = auth()->id();
 
         $this->authorizeChat($userId, $contact->id);
 
         $request->validate([
-            'message' => 'required|string|max:2000',
+            'message' => 'required|string|max:1000',
         ]);
 
         $message = Message::create([
@@ -189,7 +194,7 @@ class ChatController extends Controller
 
     /**
      * Privacy guard: validasi bahwa user berhak mengakses percakapan ini.
-     * User harus pernah chat ATAU salah satu dari mereka harus seller/buyer.
+     * Bipolar Chat Model constraints logic.
      */
     private function authorizeChat(int $userId, int $contactId): void
     {
@@ -204,24 +209,36 @@ class ChatController extends Controller
             abort(404, 'User tidak ditemukan.');
         }
 
-        // Izinkan jika sudah pernah chat
-        $hasHistory = Message::where(function ($q) use ($userId, $contactId) {
-                $q->where('sender_id', $userId)->where('receiver_id', $contactId);
-            })
-            ->orWhere(function ($q) use ($userId, $contactId) {
-                $q->where('sender_id', $contactId)->where('receiver_id', $userId);
-            })
-            ->exists();
-
-        if ($hasHistory) return;
-
-        // Izinkan memulai chat baru jika buyer↔seller
         $authUser = User::find($userId);
-        $validPair = ($authUser->role === 'buyer' && $contact->role === 'seller')
-                  || ($authUser->role === 'seller' && $contact->role === 'buyer');
 
-        if (!$validPair) {
-            abort(403, 'Anda tidak memiliki izin untuk chat dengan user ini.');
+        // Jika salah satu adalah Admin
+        if ($authUser->role === 'admin' || $contact->role === 'admin') {
+            $nonAdmin = $authUser->role === 'admin' ? $contact : $authUser;
+
+            // Admin hanya bisa dikontak jika status tiket komplain terkait sedang aktif/'Open' atau 'Sedang Diproses'
+            if ($nonAdmin->role === 'buyer') {
+                $hasActiveComplaint = Complaint::where('buyer_id', $nonAdmin->id)
+                    ->whereIn('status_tiket', ['Open', 'Sedang Diproses'])
+                    ->exists();
+            } elseif ($nonAdmin->role === 'seller') {
+                $hasActiveComplaint = Complaint::whereHas('seller', function ($q) use ($nonAdmin) {
+                    $q->where('user_id', $nonAdmin->id);
+                })->whereIn('status_tiket', ['Open', 'Sedang Diproses'])->exists();
+            } else {
+                $hasActiveComplaint = false;
+            }
+
+            if (!$hasActiveComplaint) {
+                abort(403, 'Admin hanya bisa dikontak jika status tiket komplain terkait sedang aktif.');
+            }
+        } else {
+            // Buyer ↔ Seller rule
+            $validPair = ($authUser->role === 'buyer' && $contact->role === 'seller')
+                      || ($authUser->role === 'seller' && $contact->role === 'buyer');
+
+            if (!$validPair) {
+                abort(403, 'Anda tidak memiliki izin untuk chat dengan user ini.');
+            }
         }
     }
 }
